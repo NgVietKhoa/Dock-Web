@@ -1,0 +1,42 @@
+{
+  "name": "dock-web",
+  "version": "0.2.3",
+  "description": "Panel web luôn nằm trên cùng, dock vào cạnh màn hình",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0"
+  },
+  "author": "Khoa",
+  "build": {
+    "appId": "com.khoa.dockweb",
+    "productName": "Dock Web",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png",
+      "artifactName": "Dock-Web-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Dock Web"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NgVietKhoa/Dock-Web.git"
+  }
+}

@@ -1,0 +1,697 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Dock Web</title>
+<style>
+  :root { --bg:#1e1f22; --bar:#2b2d31; --tool:#3a3c42; --tab:#383a40; --act:#4e5058; --fg:#e6e6e6; --mute:#9a9ca3; --acc:#5865f2; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:13px "Segoe UI", system-ui, sans-serif; overflow:hidden; }
+  body { border:1px solid #3a3c42; }
+  #app { display:flex; flex-direction:column; height:100%; }
+
+  button { background:var(--tab); color:var(--fg); border:0; border-radius:6px; padding:3px 7px; cursor:pointer; font:inherit; line-height:18px; }
+  button:hover { background:var(--act); }
+  button.on { background:var(--acc); }
+
+  /* Hàng 1 (giống Chrome): tab + nút cửa sổ. Vùng trống = chỗ nắm để kéo cửa sổ */
+  #bar { display:flex; align-items:center; gap:4px; height:36px; padding:4px 6px 0; background:var(--bar); flex:none; -webkit-app-region:drag; user-select:none; }
+  /* Chỉ nút/tab là no-drag → khoảng trống giữa các tab, sau nút + … đều nắm kéo được */
+  #bar button, .tab { -webkit-app-region:no-drag; }
+  #grab, #add, .win { margin-bottom:4px; }
+  #grab { color:var(--mute); padding:2px 8px; font-size:16px; cursor:move; }
+  #bar button { background:transparent; }
+  #bar button:hover { background:var(--tab); }
+  #bar button.on { background:var(--acc); }
+  #bar #close:hover { background:#da373c; }
+  #tabs { display:flex; align-self:stretch; gap:2px; overflow-x:auto; flex:0 1 auto; min-width:0; scrollbar-width:none; }
+  #tabs::-webkit-scrollbar { display:none; }
+  /* Tab co lại khi chật (160px → 48px), quá nữa thì cuộn ngang */
+  .tab { display:flex; align-items:center; gap:4px; flex:0 1 160px; min-width:48px; padding:0 8px 0 10px; border-radius:8px 8px 0 0; cursor:pointer; white-space:nowrap; }
+  .tab:hover { background:#34363b; }
+  .tab.on { background:var(--tool); }
+  .tab span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .tab b { font-weight:normal; color:var(--mute); padding:0 2px; }
+  .tab b:hover { color:#fff; }
+  .tab .snd { display:none; font-style:normal; font-size:11px; }
+  .tab.audible .snd, .tab.muted .snd { display:inline; }
+  .win { display:flex; gap:2px; margin-left:auto; }
+
+  /* Hàng 2: ← → ⟳ + ô địa chỉ */
+  #nav { display:flex; align-items:center; gap:2px; padding:4px 6px; background:var(--tool); flex:none; }
+  #nav button { width:28px; height:28px; padding:0; border-radius:50%; background:transparent; font-size:15px; }
+  #nav button:hover { background:var(--act); }
+  #nav button:disabled { opacity:.35; cursor:default; background:transparent; }
+  .omni { display:flex; align-items:center; gap:2px; flex:1; min-width:0; height:30px; margin-left:4px; padding:0 3px 0 12px; background:var(--bg); border:1px solid transparent; border-radius:15px; }
+  .omni:focus-within { border-color:var(--acc); }
+  #url { flex:1; min-width:0; padding:0; background:transparent; color:var(--fg); border:0; outline:none; font:inherit; }
+  #nav .omni button { width:24px; height:24px; font-size:14px; }
+  #nav #zoom { width:auto; padding:0 8px; border-radius:12px; color:var(--mute); font-size:12px; }
+  #star.on { color:#f5c518; }
+
+  #views { position:relative; flex:1; border-top:1px solid #1a1b1e; }
+  webview { position:absolute; inset:0; width:100%; height:100%; visibility:hidden; }
+  webview.on { visibility:visible; }
+  #empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--mute); text-align:center; padding:16px; line-height:1.6; }
+
+  /* Thanh tìm trong trang (Ctrl+F) */
+  #find { position:absolute; top:6px; right:10px; z-index:5; display:none; align-items:center; gap:4px; padding:4px; background:var(--bar); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.45); }
+  #find.on { display:flex; }
+  #findIn { width:160px; background:var(--bg); color:var(--fg); border:1px solid var(--tab); border-radius:4px; padding:2px 6px; outline:none; }
+  #findIn:focus { border-color:var(--acc); }
+  #findN { min-width:36px; color:var(--mute); font-size:12px; text-align:center; }
+
+  #corner { position:fixed; right:0; bottom:0; width:16px; height:16px; z-index:20; cursor:nwse-resize;
+    background:linear-gradient(135deg, transparent 55%, var(--mute) 55%, var(--mute) 62%, transparent 62%, transparent 75%, var(--mute) 75%, var(--mute) 82%, transparent 82%); }
+  #overlay, #shield { position:fixed; inset:0; z-index:30; display:none; -webkit-app-region:no-drag; }
+  #overlay { background:rgba(88,101,242,.25); border:3px dashed var(--acc); align-items:center; justify-content:center; font-size:18px; }
+  #overlay.on { display:flex; }
+  #shield.on { display:block; cursor:nwse-resize; }
+
+  /* Gợi ý dưới ô địa chỉ: chữ đang gõ, lịch sử, gợi ý tìm kiếm của Google */
+  #sug { position:fixed; z-index:25; display:none; overflow-y:auto; padding:3px; background:var(--bar); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.45); -webkit-app-region:no-drag; }
+  #sug.on { display:block; }
+  #sug div { display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius:4px; cursor:pointer; white-space:nowrap; }
+  #sug div.sel, #sug div:hover { background:var(--act); }
+  #sug i { flex:none; width:18px; font-style:normal; font-size:12px; text-align:center; }
+  #sug .ti { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  #sug .u { flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; color:var(--mute); }
+  #sug .u:not(:empty) { min-width:30%; }
+  #sug b { flex:none; margin-left:auto; padding:0 2px; font-weight:normal; color:var(--mute); }
+  #sug b:hover { color:#fff; }
+
+  /* Thanh dấu trang (giống Chrome) — chỉ hiện khi có ít nhất 1 dấu trang */
+  #marks { display:none; gap:2px; padding:0 6px 4px; background:var(--tool); flex:none; overflow-x:auto; scrollbar-width:none; -webkit-app-region:drag; user-select:none; }
+  #marks.on { display:flex; }
+  #marks::-webkit-scrollbar { display:none; }
+  .mark { display:flex; align-items:center; gap:6px; max-width:170px; padding:3px 8px; border-radius:12px; cursor:pointer; white-space:nowrap; flex:none; -webkit-app-region:no-drag; }
+  .mark:hover { background:var(--tab); }
+  .mark img, .mark i { width:16px; height:16px; flex:none; }
+  .mark i { font-style:normal; font-size:12px; line-height:16px; text-align:center; }
+  .mark span { overflow:hidden; text-overflow:ellipsis; outline:none; }
+  .mark span[contenteditable] { background:var(--bg); padding:0 4px; border-radius:3px; text-overflow:clip; }
+
+  /* Menu nổi dùng chung: ⋯, chuột phải tab, chuột phải dấu trang */
+  #menu { position:fixed; z-index:26; display:none; min-width:170px; max-height:calc(100vh - 8px); overflow-y:auto; padding:3px; background:var(--bar); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.45); -webkit-app-region:no-drag; user-select:none; }
+  #menu.on { display:block; }
+  #menu .mi { display:flex; align-items:center; gap:8px; padding:4px 10px 4px 6px; border-radius:4px; cursor:pointer; white-space:nowrap; }
+  #menu .mi:hover { background:var(--act); }
+  #menu .mi i { width:18px; font-style:normal; text-align:center; }
+  #menu .mi.on span::after { content:' ✓'; color:var(--acc); font-weight:bold; }
+  #menu .mi small { margin-left:auto; padding-left:16px; color:var(--mute); font-size:11px; }
+  #menu hr { margin:3px 4px; border:0; border-top:1px solid var(--tab); }
+  #menu label { display:flex; align-items:center; gap:8px; padding:4px 10px 4px 32px; white-space:nowrap; }
+  #menu input[type=range] { width:90px; }
+
+  #ghost { position:fixed; left:8px; bottom:8px; z-index:40; display:none; padding:4px 10px; border-radius:6px; background:rgba(0,0,0,.75); color:#fff; font-size:12px; pointer-events:none; }
+  body.ghost #ghost { display:block; }
+  body.ghost #corner { display:none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bar">
+    <span id="grab" title="Nắm chỗ này (hoặc chỗ trống trên thanh) để kéo cửa sổ">⠿</span>
+    <div id="tabs"></div>
+    <button id="add" title="Tab mới (Ctrl+T)">+</button>
+    <div class="win">
+      <button id="pin" title="Luôn nằm trên cùng">📌</button>
+      <button id="more" title="Thêm">⋯</button>
+      <button id="close" title="Ẩn xuống khay (Ctrl+Shift+Space để mở lại)">✕</button>
+    </div>
+  </div>
+  <div id="nav">
+    <button id="back" title="Lùi (Alt+←)" disabled>←</button>
+    <button id="fwd" title="Tới (Alt+→)" disabled>→</button>
+    <button id="reload" title="Tải lại (F5)">⟳</button>
+    <div class="omni">
+      <input id="url" placeholder="Tìm trên Google hoặc nhập URL…" spellcheck="false">
+      <button id="zoom" hidden title="Đưa về 100% (Ctrl+0)"></button>
+      <button id="star" title="Lưu vào thanh dấu trang (Ctrl+D)">☆</button>
+    </div>
+  </div>
+  <div id="marks"></div>
+  <div id="views">
+    <div id="empty">Gõ địa chỉ hoặc từ khoá vào ô phía trên, hoặc kéo link thả vào cửa sổ.<br>Nắm chỗ trống trên thanh để di chuyển · kéo mép hoặc góc để đổi kích thước.<br>Ctrl + Shift + Space: ẩn/hiện · Ctrl + Alt + Space: xuyên chuột.</div>
+    <div id="find">
+      <input id="findIn" placeholder="Tìm trong trang" spellcheck="false">
+      <span id="findN"></span>
+      <button id="findUp" title="Kết quả trước (Shift+Enter)">▲</button>
+      <button id="findDown" title="Kết quả sau (Enter)">▼</button>
+      <button id="findX" title="Đóng (Esc)">✕</button>
+    </div>
+  </div>
+</div>
+<div id="corner" title="Kéo để đổi kích thước"></div>
+<div id="overlay">Thả để mở tab</div>
+<div id="shield"></div>
+<div id="sug"></div>
+<div id="menu"></div>
+<div id="ghost">👻 Đang xuyên chuột · Ctrl+Alt+Space để tắt</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const tabsEl = $('#tabs'), views = $('#views'), urlIn = $('#url'), overlay = $('#overlay'), shield = $('#shield');
+const sug = $('#sug'), menu = $('#menu'), marksEl = $('#marks'), star = $('#star'), zoomBtn = $('#zoom');
+const findEl = $('#find'), findIn = $('#findIn'), findN = $('#findN');
+
+// Ghi localStorage gom lại tối đa 1 lần / 0,5s: trang kiểu TikTok/YouTube đổi URL liên tục khi cuộn,
+// ghi thẳng thì mỗi lần đổi URL lại serialize cả lịch sử (~1000 mục). Giá trị lấy lúc ghi → luôn mới nhất
+const pending = new Map();
+let flushTimer = null;
+function store(k, v) {
+  pending.set(k, v);
+  flushTimer ??= setTimeout(flush, 500);
+}
+function flush() {
+  for (const [k, v] of pending) try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+  pending.clear();
+  flushTimer = null;
+}
+window.addEventListener('beforeunload', flush);
+function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }
+
+let tabs = [], active = null, closed = [];
+let hist = load('history', []);  // [{ url, title, n: số lần vào, t: lần cuối }]
+let marks = load('marks', []);   // [{ url, title, icon }]
+let zooms = load('zoom', {});    // { tên miền: hệ số thu phóng }
+let sugItems = [], sugSel = -1, moving = null, state = {};
+
+const SEARCH = 'https://www.google.com/search?q=';
+const ZOOMS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+
+function norm(u) {
+  u = (u || '').trim();
+  if (!u) return null;
+  if (/^[a-z]:[\\/]/i.test(u)) return 'file:///' + u.replace(/\\/g, '/');
+  if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return u;
+  if (/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?/.test(u)) return 'http://' + u;
+  if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/.*)?$/.test(u)) return 'https://' + u;
+  return SEARCH + encodeURIComponent(u);
+}
+const pretty = (u) => { try { u = decodeURI(u); } catch {} return u.replace(/^https?:\/\/(www\.)?/i, ''); };
+const hostOf = (u) => { try { return new URL(u).host; } catch { return ''; } };
+
+function save() {
+  const kept = tabs.filter(t => t.url); // tab mới chưa vào trang nào thì không cần nhớ
+  store('tabs', kept.map(t => t.url));
+  store('active', kept.indexOf(active));
+}
+
+function visit(url) {
+  if (!/^(https?|file):/i.test(url)) return;
+  const h = hist.find(x => x.url === url);
+  if (h) { h.n++; h.t = Date.now(); }
+  else hist.push({ url, title: '', n: 1, t: Date.now() });
+  if (hist.length > 1000) hist = hist.sort((a, b) => b.t - a.t).slice(0, 800);
+  store('history', hist);
+}
+function visitTitle(url, title) {
+  const h = hist.find(x => x.url === url);
+  if (h && h.title !== title) { h.title = title; store('history', hist); }
+}
+
+// ---------- Tab ----------
+// raw rỗng = "Tab mới" trống như Chrome: webview chưa có src, gõ địa chỉ thì mở trong chính tab này.
+// lazy = chưa tải trang cho tới khi bấm vào tab (khôi phục tab cũ lúc mở app)
+function openTab(raw, focus = true, lazy = false) {
+  const url = raw ? norm(raw) : '';
+  if (url === null) return;
+  const wv = document.createElement('webview');
+  if (url && !lazy) wv.setAttribute('src', url);
+  wv.setAttribute('partition', 'persist:dock'); // giữ đăng nhập/cookie
+  wv.setAttribute('allowpopups', '');
+  const el = document.createElement('div');
+  el.className = 'tab';
+  el.innerHTML = '<i class="snd"></i><span></span><b title="Đóng (Ctrl+W)">×</b>';
+  const title = url && hist.find(h => h.url === url)?.title; // tab chưa tải thì lấy tiêu đề cũ trong lịch sử
+  const t = { url, wv, el, title, lazy: lazy && !!url };
+  el.querySelector('span').textContent = title || (url ? url.replace(/^https?:\/\//, '') : 'Tab mới');
+  el.onclick = () => select(t);
+  el.onauxclick = (e) => { if (e.button === 1) close(t); };
+  el.oncontextmenu = (e) => { e.preventDefault(); tabMenu(t, e); };
+  el.querySelector('b').onclick = (e) => { e.stopPropagation(); close(t); };
+  el.querySelector('.snd').onclick = (e) => { e.stopPropagation(); mute(t); };
+  // Chỉ xếp lại nút tab; webview giữ nguyên chỗ (di chuyển webview trong DOM sẽ tải lại trang)
+  sortable(el, 'tabs', t, () => tabs, () => { tabs.forEach(x => tabsEl.appendChild(x.el)); save(); });
+  wv.addEventListener('dom-ready', () => { t.ready = true; t.wcId = wv.getWebContentsId(); applyZoom(t); if (t === active) updNav(); });
+  wv.addEventListener('page-title-updated', (e) => { t.title = e.title; el.querySelector('span').textContent = e.title; el.title = e.title; visitTitle(t.url, e.title); });
+  wv.addEventListener('page-favicon-updated', (e) => {
+    t.icon = e.favicons[0];
+    // Dấu trang lưu lúc trang chưa kịp có icon → bổ sung
+    const m = marks.find(x => x.url === t.url && !x.icon);
+    if (m && t.icon) { m.icon = t.icon; saveMarks(); }
+  });
+  wv.addEventListener('found-in-page', (e) => {
+    if (t !== active) return;
+    findN.textContent = `${e.result.activeMatchOrdinal ?? 0}/${e.result.matches}`;
+    if (findEl.classList.contains('on')) findIn.focus(); // tìm xong trang hay giành focus → trả lại ô tìm
+  });
+  const nav = (e) => {
+    const sameHost = hostOf(e.url) === hostOf(t.url);
+    t.url = e.url;
+    if (active === t) {
+      // Đang gõ dở trong ô địa chỉ thì không ghi đè (trang tự chuyển hướng/đổi URL lúc mình đang gõ)
+      if (document.activeElement !== urlIn) urlIn.value = e.url;
+      wv.classList.add('on'); updEmpty(); updStar(); updNav();
+    }
+    if (!sameHost) applyZoom(t); // thu phóng nhớ theo tên miền → chỉ cần đặt lại khi đổi miền
+    visit(e.url); save();
+  };
+  wv.addEventListener('did-navigate', nav);
+  wv.addEventListener('did-navigate-in-page', (e) => e.isMainFrame && nav(e));
+  tabsEl.appendChild(el);
+  views.appendChild(wv);
+  tabs.push(t);
+  if (focus) select(t);
+  save();
+  return t;
+}
+
+function newTab() {
+  openTab();
+  urlIn.focus();
+}
+
+// Màn hình hướng dẫn hiện khi chưa có tab hoặc đang ở "Tab mới"
+function updEmpty() { $('#empty').style.display = active?.url ? 'none' : ''; }
+
+function select(t) {
+  if (active !== t) closeFind();
+  active = t;
+  if (t.lazy) { t.lazy = false; t.wv.setAttribute('src', t.url); }
+  tabs.forEach(x => { x.el.classList.toggle('on', x === t); x.wv.classList.toggle('on', x === t && !!x.url); });
+  updEmpty();
+  urlIn.value = t.url;
+  // block mặc định là 'start' → có thể cuộn lệch cả trang vài px dù body overflow:hidden
+  t.el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  updStar();
+  updZoom();
+  updNav();
+  save();
+}
+
+// Nút ← → mờ đi khi không lùi/tới được, như Chrome
+function updNav() {
+  const ok = active?.ready;
+  $('#back').disabled = !(ok && active.wv.canGoBack());
+  $('#fwd').disabled = !(ok && active.wv.canGoForward());
+}
+
+function close(t) {
+  if (active === t) closeFind();
+  if (t.url) closed.push(t.url);
+  if (closed.length > 20) closed.shift();
+  const i = tabs.indexOf(t);
+  t.el.remove(); t.wv.remove(); tabs.splice(i, 1);
+  if (active === t) { active = null; if (tabs.length) select(tabs[Math.max(0, i - 1)]); }
+  if (!tabs.length) { updEmpty(); urlIn.value = ''; updStar(); updZoom(); updNav(); }
+  save();
+}
+
+function cycle(d) {
+  if (tabs.length) select(tabs[(tabs.indexOf(active) + d + tabs.length) % tabs.length]);
+}
+
+function mute(t) {
+  if (!t.ready) return;
+  t.muted = !t.muted;
+  t.wv.setAudioMuted(t.muted);
+  updSound(t);
+}
+function updSound(t) {
+  t.el.classList.toggle('audible', !!t.audible);
+  t.el.classList.toggle('muted', !!t.muted);
+  const s = t.el.querySelector('.snd');
+  s.textContent = t.muted ? '🔇' : '🔊';
+  s.title = t.muted ? 'Bật tiếng tab' : 'Tắt tiếng tab';
+}
+
+function tabMenu(t, e) {
+  popMenu([
+    { label: 'Tải lại', icon: '⟳', hint: 'F5', run: () => t.ready && t.wv.reload() },
+    { label: t.muted ? 'Bật tiếng tab' : 'Tắt tiếng tab', icon: t.muted ? '🔊' : '🔇', run: () => mute(t) },
+    '-',
+    { label: 'Đóng tab', icon: '×', hint: 'Ctrl+W', run: () => close(t) },
+  ], e.clientX, e.clientY);
+}
+
+// ---------- Thanh địa chỉ (giống Chrome) ----------
+function go(raw) {
+  const u = norm(raw);
+  if (!u) return;
+  urlIn.value = u;
+  urlIn.blur(); // như Chrome: Enter xong thì rời ô địa chỉ (ẩn gợi ý) → URL cuối sau chuyển hướng được hiện lên
+  if (!active) openTab(u);
+  else if (!active.ready) active.wv.setAttribute('src', u); // "Tab mới" chưa tải trang nào
+  else active.wv.loadURL(u);
+}
+
+// Gợi ý chỉ hiện khi đang gõ: dòng đầu = đúng chữ đang gõ (Enter mở dòng này),
+// rồi trang trong lịch sử, rồi gợi ý tìm kiếm của Google
+let sugTimer;
+function suggest() {
+  const raw = urlIn.value.trim(), q = raw.toLowerCase();
+  clearTimeout(sugTimer);
+  if (!raw) return hideSug();
+  const words = q.split(/\s+/).filter(Boolean);
+  // decode URL 1 lần mỗi mục (trước đây gọi lại trong hàm so sánh khi sort → hàng nghìn lần mỗi phím gõ)
+  const hits = [];
+  for (const h of hist) {
+    const u = pretty(h.url).toLowerCase();
+    const s = u + ' ' + h.title.toLowerCase();
+    if (words.every(w => s.includes(w))) hits.push({ h, pre: u.startsWith(q) ? 1 : 0 });
+  }
+  hits.sort((a, b) => (b.pre - a.pre) || (b.h.n - a.h.n) || (b.h.t - a.h.t));
+  const url = norm(raw);
+  sugItems = [
+    { kind: url.startsWith(SEARCH) ? 'search' : 'url', text: raw, url },
+    ...hits.slice(0, 5).map(({ h }) => ({ kind: 'hist', h, url: h.url })),
+  ];
+  sugSel = 0;
+  renderSug();
+
+  sugTimer = setTimeout(async () => {
+    const list = await dock.suggest(raw);
+    if (urlIn.value.trim() !== raw || document.activeElement !== urlIn) return; // đã gõ tiếp → bỏ kết quả cũ
+    sugItems = sugItems.filter(x => x.kind !== 'google').concat(
+      list.filter(s => s.toLowerCase() !== q).slice(0, 5).map(s => ({ kind: 'google', text: s, url: SEARCH + encodeURIComponent(s) })));
+    renderSug();
+  }, 150);
+}
+
+const SUG_ICON = { search: '🔍', google: '🔍', url: '🌐', hist: '🕘' };
+function renderSug() {
+  if (!sugItems.length) return hideSug();
+  sug.replaceChildren(...sugItems.map((it, i) => {
+    const d = document.createElement('div');
+    d.className = i === sugSel ? 'sel' : '';
+    d.innerHTML = '<i></i><span class="ti"></span><span class="u"></span>';
+    const [ti, u] = it.kind === 'hist' ? [it.h.title || pretty(it.url), it.h.title ? pretty(it.url) : '']
+      : it.kind === 'search' ? [it.text, '— Tìm trên Google']
+      : it.kind === 'url' ? [pretty(it.url), '— Mở trang']
+      : [it.text, ''];
+    d.querySelector('i').textContent = SUG_ICON[it.kind];
+    d.querySelector('.ti').textContent = ti;
+    d.querySelector('.u').textContent = u;
+    d.title = it.url;
+    // mousedown + preventDefault để ô URL không mất focus trước khi bấm xong
+    d.onmousedown = (e) => { e.preventDefault(); go(it.url); };
+    if (it.kind === 'hist') {
+      const b = document.createElement('b');
+      b.textContent = '×';
+      b.title = 'Xoá khỏi lịch sử';
+      b.onmousedown = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        hist = hist.filter(x => x !== it.h); store('history', hist); suggest();
+      };
+      d.append(b);
+    }
+    return d;
+  }));
+  const r = $('.omni').getBoundingClientRect();
+  sug.style.left = r.left + 'px';
+  sug.style.top = r.bottom + 2 + 'px';
+  sug.style.width = Math.min(r.width, innerWidth - r.left - 6) + 'px';
+  sug.style.maxHeight = innerHeight - r.bottom - 10 + 'px';
+  sug.classList.add('on');
+}
+function hideSug() { sug.classList.remove('on'); sugItems = []; sugSel = -1; }
+
+// Bấm lần đầu vào ô địa chỉ = chọn hết như Chrome → gõ là đè luôn link cũ
+urlIn.addEventListener('mousedown', (e) => {
+  if (document.activeElement === urlIn) return;
+  e.preventDefault();
+  urlIn.focus();
+  urlIn.select();
+});
+urlIn.addEventListener('input', suggest);
+urlIn.addEventListener('blur', hideSug);
+window.addEventListener('resize', hideSug);
+urlIn.addEventListener('keydown', (e) => {
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && sugItems.length) {
+    e.preventDefault();
+    const n = sugItems.length;
+    sugSel = e.key === 'ArrowDown' ? (sugSel + 1) % n : (sugSel - 1 + n) % n;
+    renderSug();
+    sug.children[sugSel].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Escape') hideSug();
+  else if (e.key === 'Enter') go(sugSel >= 0 ? sugItems[sugSel].url : urlIn.value);
+});
+
+// ---------- Thu phóng: nhớ theo tên miền, giống Chrome ----------
+function applyZoom(t) {
+  if (t.ready) t.wv.setZoomFactor(zooms[hostOf(t.url)] || 1);
+  if (t === active) updZoom();
+}
+function zoom(dir) {
+  if (!active?.url) return;
+  const h = hostOf(active.url), cur = zooms[h] || 1;
+  const next = dir === 0 ? 1
+    : dir > 0 ? ZOOMS.find(z => z > cur + 0.001) ?? ZOOMS.at(-1)
+    : ZOOMS.findLast(z => z < cur - 0.001) ?? ZOOMS[0];
+  if (next === 1) delete zooms[h]; else zooms[h] = next;
+  store('zoom', zooms);
+  tabs.forEach(t => hostOf(t.url) === h && applyZoom(t));
+}
+function updZoom() {
+  const z = active ? zooms[hostOf(active.url)] || 1 : 1;
+  zoomBtn.hidden = z === 1;
+  zoomBtn.textContent = Math.round(z * 100) + '%';
+}
+zoomBtn.onclick = () => zoom(0);
+
+// ---------- Tìm trong trang ----------
+function openFind() {
+  if (!active) return;
+  findEl.classList.add('on');
+  findIn.focus();
+  findIn.select();
+  if (findIn.value) runFind(true, true);
+}
+function closeFind() {
+  if (!findEl.classList.contains('on')) return;
+  findEl.classList.remove('on');
+  findN.textContent = '';
+  // Chỉ tab đang xem có thể đang tìm (đổi tab là đóng thanh tìm trước)
+  if (active?.ready) active.wv.stopFindInPage('clearSelection');
+}
+// fresh = true: bắt đầu lượt tìm mới (đổi từ khoá); false: nhảy tới kết quả kế tiếp
+function runFind(forward = true, fresh = false) {
+  if (!active?.ready) return;
+  if (!findIn.value) { active.wv.stopFindInPage('clearSelection'); findN.textContent = ''; return; }
+  active.wv.findInPage(findIn.value, { forward, findNext: fresh });
+}
+findIn.addEventListener('input', () => runFind(true, true));
+findIn.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') runFind(!e.shiftKey);
+  else if (e.key === 'Escape') closeFind();
+});
+$('#findUp').onclick = () => runFind(false);
+$('#findDown').onclick = () => runFind(true);
+$('#findX').onclick = closeFind;
+
+// ---------- Thanh dấu trang ----------
+// ☆ lưu trang đang mở · bấm mở ở tab hiện tại · chuột giữa mở tab mới · chuột phải: menu · kéo để xếp lại
+function saveMarks() { store('marks', marks); renderMarks(); }
+
+function renderMarks() {
+  marksEl.replaceChildren(...marks.map((m) => {
+    const el = document.createElement('div');
+    el.className = 'mark';
+    el.title = (m.title ? m.title + '\n' : '') + m.url;
+    el.innerHTML = '<i>🌐</i><span></span>';
+    if (m.icon) {
+      const img = document.createElement('img');
+      img.src = m.icon;
+      img.onload = () => el.querySelector('i')?.replaceWith(img);
+    }
+    el.querySelector('span').textContent = m.title || pretty(m.url);
+    el.onclick = () => go(m.url);
+    el.onauxclick = (e) => { if (e.button === 1) openTab(m.url); };
+    el.oncontextmenu = (e) => {
+      e.preventDefault();
+      popMenu([
+        { label: 'Mở trong tab mới', icon: '+', run: () => openTab(m.url) },
+        { label: 'Đổi tên', icon: '✎', run: () => rename(m, el) },
+        { label: 'Xoá', icon: '🗑', run: () => { marks = marks.filter(x => x !== m); saveMarks(); } },
+      ], e.clientX, e.clientY);
+    };
+    sortable(el, 'marks', m, () => marks, saveMarks);
+    return el;
+  }));
+  marksEl.classList.toggle('on', marks.length > 0);
+  updStar();
+}
+marksEl.addEventListener('wheel', (e) => { marksEl.scrollLeft += e.deltaY; });
+
+function updStar() {
+  const on = !!active && marks.some(m => m.url === active.url);
+  star.classList.toggle('on', on);
+  star.textContent = on ? '★' : '☆';
+  star.title = (on ? 'Bỏ khỏi thanh dấu trang' : 'Lưu vào thanh dấu trang') + ' (Ctrl+D)';
+}
+star.onclick = () => {
+  if (!active?.url) return;
+  const i = marks.findIndex(m => m.url === active.url);
+  if (i >= 0) marks.splice(i, 1);
+  else marks.push({ url: active.url, title: active.title || '', icon: active.icon || '' });
+  saveMarks();
+};
+
+// Sửa tên ngay trên thanh: Enter/bấm ra ngoài = lưu, Esc = huỷ
+function rename(m, el) {
+  const span = el.querySelector('span');
+  span.contentEditable = 'true';
+  span.focus();
+  getSelection().selectAllChildren(span);
+  const done = (ok) => { span.onblur = null; if (ok) m.title = span.textContent.trim(); saveMarks(); };
+  span.onclick = (e) => e.stopPropagation();
+  span.onkeydown = (e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); done(e.key === 'Enter'); } };
+  span.onblur = () => done(true);
+}
+
+// ---------- Kéo thả để xếp lại tab / dấu trang ----------
+// Cờ `moving` để lớp phủ "Thả để mở tab" không bật lên khi kéo nội bộ
+function sortable(el, kind, item, list, done) {
+  el.draggable = true;
+  el.addEventListener('dragstart', (e) => { moving = { kind, item }; e.dataTransfer.effectAllowed = 'move'; });
+  el.addEventListener('dragend', () => { moving = null; });
+  el.addEventListener('dragover', (e) => { if (moving?.kind === kind) { e.preventDefault(); e.stopPropagation(); } });
+  el.addEventListener('drop', (e) => {
+    if (moving?.kind !== kind) return;
+    e.preventDefault(); e.stopPropagation();
+    const arr = list(), from = arr.indexOf(moving.item), to = arr.indexOf(item);
+    if (from < 0 || to < 0 || from === to) return;
+    arr.splice(to, 0, arr.splice(from, 1)[0]);
+    done();
+  });
+}
+
+// ---------- Menu nổi ----------
+// item = { label, icon, hint, on, run } · '-' = vạch ngăn · Node = phần tử tự dựng
+function popMenu(items, x, y, alignRight = false) {
+  menu.replaceChildren(...items.map((it) => {
+    if (it instanceof Node) return it;
+    if (it === '-') return document.createElement('hr');
+    const d = document.createElement('div');
+    d.className = 'mi' + (it.on ? ' on' : '');
+    d.innerHTML = '<i></i><span></span><small></small>';
+    d.querySelector('i').textContent = it.icon || '';
+    d.querySelector('span').textContent = it.label;
+    d.querySelector('small').textContent = it.hint || '';
+    d.onclick = () => { hideMenu(); it.run(); };
+    return d;
+  }));
+  menu.classList.add('on');
+  const left = alignRight ? x - menu.offsetWidth : x;
+  menu.style.left = Math.max(0, Math.min(left, innerWidth - menu.offsetWidth - 4)) + 'px';
+  menu.style.top = Math.max(0, Math.min(y, innerHeight - menu.offsetHeight - 4)) + 'px';
+}
+function hideMenu() { menu.classList.remove('on'); }
+window.addEventListener('mousedown', (e) => { if (!menu.contains(e.target)) hideMenu(); });
+window.addEventListener('blur', hideMenu);
+
+$('#more').onclick = () => {
+  const r = $('#more').getBoundingClientRect();
+  const op = document.createElement('label');
+  op.innerHTML = 'Độ trong suốt <input type="range" min="0.3" max="1" step="0.05">';
+  const range = op.querySelector('input');
+  range.value = state.opacity ?? 1;
+  range.oninput = () => { state.opacity = parseFloat(range.value); dock.opacity(state.opacity); };
+  popMenu([
+    { label: 'Gắn cạnh trái', icon: '⇤', run: () => dock.snap('left') },
+    { label: 'Gắn cạnh phải', icon: '⇥', run: () => dock.snap('right') },
+    { label: 'Gắn cạnh trên', icon: '⤒', run: () => dock.snap('top') },
+    { label: 'Gắn cạnh dưới', icon: '⤓', run: () => dock.snap('bottom') },
+    { label: 'Phóng to / thu lại', icon: '▢', hint: 'nhấp đúp thanh', run: () => dock.maximize() },
+    '-',
+    op,
+    { label: 'Xuyên chuột', icon: '👻', on: state.ghost, hint: 'Ctrl+Alt+Space', run: () => dock.ghost() },
+    '-',
+    { label: 'Xoá lịch sử duyệt web', icon: '🗑', run: () => { if (confirm('Xoá toàn bộ lịch sử duyệt web?')) { hist = []; store('history', hist); } } },
+    { label: 'Thoát hẳn', icon: '⏻', run: () => dock.quit() },
+  ], r.right, r.bottom + 2, true);
+};
+
+// ---------- Nút & phím tắt ----------
+$('#add').onclick = newTab;
+$('#back').onclick = () => active?.ready && active.wv.canGoBack() && active.wv.goBack();
+$('#fwd').onclick = () => active?.ready && active.wv.canGoForward() && active.wv.goForward();
+$('#reload').onclick = () => active?.ready && active.wv.reload();
+$('#pin').onclick = () => dock.pin();
+$('#close').onclick = () => dock.hide();
+dock.onState((s) => {
+  state = s;
+  $('#pin').classList.toggle('on', s.pinned);
+  document.body.classList.toggle('ghost', s.ghost);
+});
+dock.onOpenTab((url) => openTab(url));
+dock.onAudio((id, audible) => {
+  const t = tabs.find(x => x.wcId === id);
+  if (t) { t.audible = audible; updSound(t); }
+});
+
+const keys = {
+  newTab,
+  closeTab: () => active && close(active),
+  reopen: () => closed.length && openTab(closed.pop()),
+  focusUrl: () => { urlIn.focus(); urlIn.select(); },
+  reload: () => $('#reload').click(),
+  hardReload: () => active?.ready && active.wv.reloadIgnoringCache(),
+  back: () => $('#back').click(),
+  forward: () => $('#fwd').click(),
+  nextTab: () => cycle(1),
+  prevTab: () => cycle(-1),
+  bookmark: () => star.click(),
+  find: openFind,
+  zoomIn: () => zoom(1),
+  zoomOut: () => zoom(-1),
+  zoomReset: () => zoom(0),
+};
+dock.onKey((a) => {
+  const n = /^tab(\d)$/.exec(a);
+  if (!n) return keys[a]?.();
+  const t = n[1] === '9' ? tabs.at(-1) : tabs[n[1] - 1]; // Ctrl+9 = tab cuối, như Chrome
+  if (t) select(t);
+});
+
+// Kéo thả link / URL / file → khi kéo vào cửa sổ, lớp phủ hiện lên che trang web để bắt được cú thả
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => e.preventDefault());
+window.addEventListener('dragenter', (e) => { e.preventDefault(); if (!moving) overlay.classList.add('on'); });
+overlay.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+overlay.addEventListener('dragleave', (e) => { if (e.target === overlay) overlay.classList.remove('on'); });
+overlay.addEventListener('drop', (e) => {
+  e.preventDefault();
+  overlay.classList.remove('on');
+  const d = e.dataTransfer;
+  let u = (d.getData('text/uri-list') || '').split(/\r?\n/).find(l => l && !l.startsWith('#'));
+  if (!u) u = d.getData('text/plain');
+  if (!u && d.files.length) {
+    const p = dock.filePath(d.files[0]);
+    if (p) u = 'file:///' + p.replace(/\\/g, '/').replace(/^\/+/, '');
+  }
+  if (u) openTab(u);
+});
+
+// Kéo góc dưới-phải để resize (bổ sung cho kéo mép cửa sổ)
+$('#corner').addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  shield.classList.add('on');
+  dock.resizeStart();
+});
+const stop = () => { if (shield.classList.contains('on')) { shield.classList.remove('on'); dock.resizeEnd(); } };
+shield.addEventListener('mouseup', stop);
+window.addEventListener('mouseup', stop);
+window.addEventListener('blur', stop);
+
+// Khôi phục dấu trang + tab lần trước
+try { localStorage.removeItem('mobile'); } catch {} // dọn cài đặt của tính năng giao diện điện thoại đã bỏ
+renderMarks();
+// Chỉ tải trang của tab đang xem; tab khác tải khi bấm vào (mỗi trang = 1 tiến trình, tải hết cùng lúc rất nặng)
+load('tabs', []).forEach((u) => openTab(u, false, true));
+if (tabs.length) select(tabs[load('active', 0)] ?? tabs[0]);
+</script>
+</body>
+</html>
