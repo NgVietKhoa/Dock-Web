@@ -1,12 +1,13 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('dock', {
-  snap: (side) => ipcRenderer.send('snap', side),
   resizeStart: () => ipcRenderer.send('resize-start'),
   resizeEnd: () => ipcRenderer.send('resize-end'),
   opacity: (v) => ipcRenderer.send('opacity', v),
   pin: () => ipcRenderer.send('pin'),
+  theme: (v) => ipcRenderer.send('theme', v),
   ghost: () => ipcRenderer.send('ghost'),
+  minimize: () => ipcRenderer.send('minimize'),
   maximize: () => ipcRenderer.send('maximize'),
   hide: () => ipcRenderer.send('hide'),
   quit: () => ipcRenderer.send('quit'),

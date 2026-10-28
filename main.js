@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, globalShortcut, ipcMain, Tray, Menu, nativeImage, net, session } = require('electron');
+const { app, BrowserWindow, screen, globalShortcut, ipcMain, Tray, Menu, nativeImage, nativeTheme, net, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -7,7 +7,7 @@ const fs = require('fs');
 app.setPath('userData', path.join(app.getPath('appData'), 'dock-web'));
 
 const cfgFile = () => path.join(app.getPath('userData'), 'float-config.json');
-let cfg = { bounds: null, opacity: 1, pinned: true, trayHinted: false };
+let cfg = { bounds: null, opacity: 1, pinned: true, trayHinted: false, theme: 'system' };
 let win, tray, icon, saveTimer, resizeTimer;
 let ghost = false, quitting = false;
 
@@ -56,10 +56,8 @@ function createWindow() {
     minWidth: 240,
     minHeight: 160,
     frame: false,
-    resizable: true,
-    skipTaskbar: false,
     icon,
-    backgroundColor: '#1e1f22',
+    backgroundColor: bgColor(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -68,7 +66,7 @@ function createWindow() {
     },
   });
   applyPin();
-  win.setOpacity(cfg.opacity);
+  applyOpacity();
   win.loadFile('index.html');
   win.webContents.on('did-finish-load', sendState);
   hookKeys(win.webContents);
@@ -76,9 +74,16 @@ function createWindow() {
   const remember = () => { if (!win.isMinimized()) { cfg.bounds = win.getBounds(); saveCfg(); } };
   win.on('move', remember);
   win.on('resize', remember);
+  win.on('maximize', sendState);
+  win.on('unmaximize', sendState);
   // ✕ / Alt+F4 only hides to the tray; quit for real via the ⋯ menu or the tray icon
   win.on('close', (e) => { if (!quitting) { e.preventDefault(); hide(); } });
 }
+
+// 'system' | 'light' | 'dark' — like Chrome's Appearance setting: drives prefers-color-scheme for the UI and for web pages
+function applyTheme() { nativeTheme.themeSource = cfg.theme; }
+// Matches --bg in index.html → no flash of the wrong color while the window opens or resizes
+const bgColor = () => (nativeTheme.shouldUseDarkColors ? '#1e1f22' : '#f1f3f4');
 
 function applyPin() {
   // 'screen-saver' = highest level, stays above even fullscreen apps
@@ -87,7 +92,7 @@ function applyPin() {
 }
 
 function sendState() {
-  win.webContents.send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost });
+  win.webContents.send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost, maximized: win.isMaximized(), theme: cfg.theme });
   tray?.setContextMenu(trayMenu());
 }
 
@@ -112,11 +117,12 @@ function togglePin() {
   sendState();
 }
 
-// Click-through: the window fades and every click falls through to the app underneath
+// Click-through: the window fades (at most 60% opacity) and every click falls through to the app underneath
+const applyOpacity = () => win.setOpacity(ghost ? Math.min(cfg.opacity, 0.6) : cfg.opacity);
 function toggleGhost() {
   ghost = !ghost;
   win.setIgnoreMouseEvents(ghost);
-  win.setOpacity(ghost ? Math.min(cfg.opacity, 0.6) : cfg.opacity);
+  applyOpacity();
   if (ghost) {
     win.setAlwaysOnTop(true, 'screen-saver');
     if (!win.isVisible()) win.showInactive();
@@ -133,20 +139,6 @@ function trayMenu() {
     { type: 'separator' },
     { label: 'Thoát', click: () => app.quit() },
   ]);
-}
-
-// Snap to a screen edge (the window can still be dragged freely afterwards)
-function snap(side) {
-  const wa = screen.getDisplayMatching(win.getBounds()).workArea;
-  const b = win.getBounds();
-  const w = Math.min(b.width, wa.width), h = Math.min(b.height, wa.height);
-  const map = {
-    left:   { x: wa.x, y: wa.y, width: w, height: wa.height },
-    right:  { x: wa.x + wa.width - w, y: wa.y, width: w, height: wa.height },
-    bottom: { x: wa.x, y: wa.y + wa.height - h, width: wa.width, height: h },
-    top:    { x: wa.x, y: wa.y, width: wa.width, height: h },
-  };
-  if (map[side]) win.setBounds(map[side]);
 }
 
 // Shortcuts: caught in main because while focus is inside a page, the webview swallows all keys
@@ -176,6 +168,10 @@ function hookKeys(contents) {
     const a = keyAction(input);
     if (a) { e.preventDefault(); win?.webContents.send('key', a); }
   });
+  // Mouse side buttons (Back/Forward) → same as Alt+← / Alt+→ ('app-command' doesn't fire over a webview)
+  contents.on('before-mouse-event', (_e, m) => {
+    if (m.type === 'mouseUp' && (m.button === 'back' || m.button === 'forward')) win?.webContents.send('key', m.button);
+  });
 }
 
 // Corner-drag resize: main reads the real cursor position → no drift at Windows 125%/150% scaling
@@ -195,10 +191,12 @@ ipcMain.on('resize-start', () => {
 });
 ipcMain.on('resize-end', () => clearInterval(resizeTimer));
 
-ipcMain.on('snap', (_e, side) => snap(side));
-ipcMain.on('opacity', (_e, v) => { cfg.opacity = v; win.setOpacity(ghost ? Math.min(v, 0.6) : v); saveCfg(); });
+ipcMain.on('opacity', (_e, v) => { cfg.opacity = v; applyOpacity(); saveCfg(); });
+ipcMain.on('theme', (_e, v) => { cfg.theme = v; applyTheme(); saveCfg(); sendState(); });
+nativeTheme.on('updated', () => win?.setBackgroundColor(bgColor())); // our choice, or Windows switching light/dark in 'system' mode
 ipcMain.on('pin', togglePin);
 ipcMain.on('ghost', toggleGhost);
+ipcMain.on('minimize', () => win.minimize());
 ipcMain.on('maximize', () => (win.isMaximized() ? win.unmaximize() : win.maximize()));
 ipcMain.on('hide', hide);
 ipcMain.on('quit', () => app.quit());
@@ -270,6 +268,7 @@ app.whenReady().then(() => {
     .replace(/Chrome\/(\d+)[\d.]*/, 'Chrome/$1.0.0.0');
   googleLoginHeaders(session.fromPartition('persist:dock'));
   loadCfg();
+  applyTheme();
   icon = makeIcon();
   tray = new Tray(icon);
   tray.setToolTip('Dock Web');
@@ -286,4 +285,3 @@ app.whenReady().then(() => {
 });
 app.on('before-quit', () => { quitting = true; });
 app.on('will-quit', () => globalShortcut.unregisterAll());
-app.on('window-all-closed', () => app.quit());

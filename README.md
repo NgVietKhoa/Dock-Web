@@ -17,17 +17,18 @@ To update, just install the new version over the old one; tabs, bookmarks, histo
 ## Features
 
 **Floating window**
-- Always on top, even over games and fullscreen apps (toggle with the 📌 button).
+- Always on top, even over games and fullscreen apps (toggle with the pin button).
 - Drag an empty spot on the tab bar to move the window; drag an edge or corner to resize. Position and size are remembered.
-- Quickly snap to the left / right / top / bottom edge of the screen and adjust opacity (⋯ menu).
+- Minimize / maximize buttons next to the close button (double-clicking the tab bar also maximizes); adjust opacity in the ⋯ menu.
+- Light / dark theme, or follow Windows (⋯ menu) — websites that support dark mode follow it too, like Chrome.
 - **Click-through:** the window fades and every click passes to the app underneath — handy for watching a video while working.
-- The ✕ button only hides the window to the system tray; quit for real via the ⋯ menu or by right-clicking the tray icon.
+- The close button only hides the window to the system tray; quit for real via the ⋯ menu or by right-clicking the tray icon.
 
 **Browses like Chrome**
 - Multiple tabs: drag to reorder, middle-click to close, `Ctrl+Shift+T` to reopen the last closed tab. Tabs are restored when the app reopens (only the active tab is loaded, to keep things light).
 - The address bar accepts both URLs and search terms, with suggestions from history and Google search suggestions.
-- Bookmarks bar: ☆ to save a page, right-click to rename or delete.
-- Per-site zoom (`Ctrl + mouse wheel`), find in page (`Ctrl+F`), mute individual tabs (🔊).
+- Bookmarks bar: the star in the address bar saves a page, right-click to rename or delete.
+- Per-site zoom (`Ctrl + mouse wheel`), find in page (`Ctrl+F`), mute individual tabs (speaker icon on the tab).
 - Stays signed in between launches. "Sign in with Google/Facebook" popups open in their own window.
 - Drag a link, file or URL from another browser into the window to open it in a new tab.
 
@@ -42,7 +43,7 @@ To update, just install the new version over the old one; tabs, bookmarks, histo
 | `Ctrl+Tab`, `Ctrl+Shift+Tab`, `Ctrl+1…9` | Switch tabs (`Ctrl+9` = last tab) |
 | `Ctrl+L`, `Alt+D`, `F6` | Focus the address bar |
 | `F5`, `Ctrl+R` / `Ctrl+Shift+R` | Reload / reload bypassing the cache |
-| `Alt+←` / `Alt+→` | Back / forward |
+| `Alt+←` / `Alt+→`, mouse side buttons | Back / forward |
 | `Ctrl+D` | Add / remove bookmark |
 | `Ctrl+F` | Find in page |
 | `Ctrl +` / `Ctrl -` / `Ctrl+0` | Zoom in / zoom out / reset to 100% |

@@ -1,6 +1,6 @@
 {
   "name": "dock-web",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Panel web luôn nằm trên cùng, dock vào cạnh màn hình",
   "main": "main.js",
   "scripts": {
