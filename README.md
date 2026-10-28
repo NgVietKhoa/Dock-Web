@@ -1,76 +1,78 @@
 # Dock Web
 
-Cửa sổ trình duyệt nhỏ, luôn nổi trên cùng màn hình: vừa xem YouTube, chat hay tra cứu, vừa làm việc ở app khác mà không phải chuyển qua lại.
+A small browser window that always floats on top of the screen: watch YouTube, chat, or look things up while working in another app, without switching back and forth.
 
-![Giao diện Dock Web](docs/screenshot.png)
+![Dock Web interface](docs/screenshot.png)
 
-## Tải về
+> The app's interface is in Vietnamese.
 
-Tải file **`Dock-Web-Setup-x.y.z.exe`** ở trang [Releases](https://github.com/NgVietKhoa/Dock-Web/releases/latest), mở ra và làm theo hướng dẫn. Chỉ hỗ trợ Windows 10/11 (64-bit).
+## Download
 
-> Bộ cài chưa được ký số nên Windows có thể hiện *"Windows protected your PC"*. Bấm **More info** → **Run anyway** để cài tiếp.
+Download **`Dock-Web-Setup-x.y.z.exe`** from the [Releases](https://github.com/NgVietKhoa/Dock-Web/releases/latest) page, open it and follow the installer. Windows 10/11 (64-bit) only.
 
-Cài bản mới đè lên bản cũ là được; tab, dấu trang, lịch sử và các tài khoản đã đăng nhập vẫn giữ nguyên.
+> The installer is not code-signed, so Windows may show *"Windows protected your PC"*. Click **More info** → **Run anyway** to continue.
 
-## Tính năng
+To update, just install the new version over the old one; tabs, bookmarks, history and signed-in accounts are kept.
 
-**Cửa sổ nổi**
-- Luôn nằm trên cùng, kể cả trên game hoặc app toàn màn hình (bật/tắt bằng nút 📌).
-- Kéo ở chỗ trống trên thanh tab để di chuyển, kéo mép hoặc góc để đổi kích thước. Vị trí và kích thước được nhớ lại.
-- Gắn nhanh vào cạnh trái / phải / trên / dưới màn hình, chỉnh độ trong suốt (menu ⋯).
-- **Xuyên chuột:** cửa sổ mờ đi và mọi cú bấm rơi xuống app bên dưới — tiện khi vừa xem video vừa làm việc.
-- Nút ✕ chỉ ẩn xuống khay hệ thống; thoát hẳn qua menu ⋯ hoặc chuột phải icon ở khay.
+## Features
 
-**Duyệt web như Chrome**
-- Nhiều tab: kéo thả để sắp xếp, chuột giữa để đóng, `Ctrl+Shift+T` mở lại tab vừa đóng. Mở app lại thì tab cũ vẫn còn (chỉ tải tab đang xem cho nhẹ máy).
-- Ô địa chỉ gõ được cả địa chỉ lẫn từ khoá, có gợi ý từ lịch sử và gợi ý tìm kiếm của Google.
-- Thanh dấu trang: ☆ để lưu trang, chuột phải để đổi tên hoặc xoá.
-- Thu phóng theo từng trang web (`Ctrl + lăn chuột`), tìm trong trang (`Ctrl+F`), tắt tiếng từng tab (🔊).
-- Giữ đăng nhập giữa các lần mở app. Popup "Đăng nhập bằng Google/Facebook" mở thành cửa sổ riêng.
-- Kéo link, file hoặc URL từ trình duyệt khác thả vào cửa sổ để mở thành tab mới.
+**Floating window**
+- Always on top, even over games and fullscreen apps (toggle with the 📌 button).
+- Drag an empty spot on the tab bar to move the window; drag an edge or corner to resize. Position and size are remembered.
+- Quickly snap to the left / right / top / bottom edge of the screen and adjust opacity (⋯ menu).
+- **Click-through:** the window fades and every click passes to the app underneath — handy for watching a video while working.
+- The ✕ button only hides the window to the system tray; quit for real via the ⋯ menu or by right-clicking the tray icon.
 
-## Phím tắt
+**Browses like Chrome**
+- Multiple tabs: drag to reorder, middle-click to close, `Ctrl+Shift+T` to reopen the last closed tab. Tabs are restored when the app reopens (only the active tab is loaded, to keep things light).
+- The address bar accepts both URLs and search terms, with suggestions from history and Google search suggestions.
+- Bookmarks bar: ☆ to save a page, right-click to rename or delete.
+- Per-site zoom (`Ctrl + mouse wheel`), find in page (`Ctrl+F`), mute individual tabs (🔊).
+- Stays signed in between launches. "Sign in with Google/Facebook" popups open in their own window.
+- Drag a link, file or URL from another browser into the window to open it in a new tab.
 
-| Phím | Tác dụng |
+## Keyboard shortcuts
+
+| Keys | Action |
 |---|---|
-| `Ctrl+Shift+Space` | Ẩn / hiện cửa sổ (dùng được ở mọi app) |
-| `Ctrl+Alt+Space` | Bật / tắt xuyên chuột (dùng được ở mọi app) |
-| `Ctrl+T` / `Ctrl+W` | Tab mới / đóng tab |
-| `Ctrl+Shift+T` | Mở lại tab vừa đóng |
-| `Ctrl+Tab`, `Ctrl+Shift+Tab`, `Ctrl+1…9` | Chuyển tab (`Ctrl+9` = tab cuối) |
-| `Ctrl+L`, `Alt+D`, `F6` | Vào ô địa chỉ |
-| `F5`, `Ctrl+R` / `Ctrl+Shift+R` | Tải lại / tải lại bỏ qua cache |
-| `Alt+←` / `Alt+→` | Lùi / tới |
-| `Ctrl+D` | Lưu / bỏ dấu trang |
-| `Ctrl+F` | Tìm trong trang |
-| `Ctrl +` / `Ctrl -` / `Ctrl+0` | Phóng to / thu nhỏ / về 100% |
+| `Ctrl+Shift+Space` | Hide / show the window (works from any app) |
+| `Ctrl+Alt+Space` | Toggle click-through (works from any app) |
+| `Ctrl+T` / `Ctrl+W` | New tab / close tab |
+| `Ctrl+Shift+T` | Reopen the last closed tab |
+| `Ctrl+Tab`, `Ctrl+Shift+Tab`, `Ctrl+1…9` | Switch tabs (`Ctrl+9` = last tab) |
+| `Ctrl+L`, `Alt+D`, `F6` | Focus the address bar |
+| `F5`, `Ctrl+R` / `Ctrl+Shift+R` | Reload / reload bypassing the cache |
+| `Alt+←` / `Alt+→` | Back / forward |
+| `Ctrl+D` | Add / remove bookmark |
+| `Ctrl+F` | Find in page |
+| `Ctrl +` / `Ctrl -` / `Ctrl+0` | Zoom in / zoom out / reset to 100% |
 
-Nếu `Ctrl+Shift+Space` hoặc `Ctrl+Alt+Space` đã bị app khác chiếm (Unikey, app chụp màn hình…), Dock Web sẽ báo ở khay hệ thống khi mở; lúc đó dùng icon ở khay thay thế.
+If `Ctrl+Shift+Space` or `Ctrl+Alt+Space` is already taken by another app (Unikey, screenshot tools…), Dock Web shows a notice in the system tray on launch; use the tray icon instead.
 
-## Lưu ý
+## Notes
 
-- **Đăng nhập Google:** Google đôi khi chặn đăng nhập trong app nhúng trình duyệt ("This browser or app may not be secure"). Dock Web đã xử lý để qua được trong đa số trường hợp; nếu vẫn bị, thử lại sau ít phút hoặc tắt VPN.
-- **Dữ liệu** (tab, dấu trang, lịch sử, cookie đăng nhập) nằm ở `%APPDATA%\dock-web`. Xoá thư mục này để đưa app về như mới.
-- Khi gõ vào ô địa chỉ, chữ đang gõ được gửi tới Google để lấy gợi ý tìm kiếm (giống Chrome).
+- **Google sign-in:** Google sometimes blocks sign-in inside apps that embed a browser ("This browser or app may not be secure"). Dock Web works around this in most cases; if it still fails, try again in a few minutes or turn off your VPN.
+- **Data** (tabs, bookmarks, history, login cookies) lives in `%APPDATA%\dock-web`. Delete this folder to reset the app.
+- While you type in the address bar, the text is sent to Google to fetch search suggestions (same as Chrome).
 
-## Chạy từ mã nguồn
+## Running from source
 
-Cần [Node.js](https://nodejs.org/) 20 trở lên.
+Requires [Node.js](https://nodejs.org/) 20 or later.
 
 ```bash
 git clone https://github.com/NgVietKhoa/Dock-Web.git
 cd Dock-Web
 npm install
-npm start          # chạy thử
-npm run dist       # build bộ cài vào thư mục dist/
+npm start          # run in development
+npm run dist       # build the installer into dist/
 ```
 
-Mã nguồn gồm 3 file chính, viết bằng [Electron](https://www.electronjs.org/):
+The source consists of 3 main files, built with [Electron](https://www.electronjs.org/):
 
-| File | Vai trò |
+| File | Role |
 |---|---|
-| `main.js` | Cửa sổ, khay hệ thống, phím tắt toàn hệ thống, xử lý đăng nhập Google |
-| `preload.js` | Cầu nối an toàn giữa giao diện và `main.js` |
-| `index.html` | Toàn bộ giao diện: tab, ô địa chỉ, dấu trang, menu |
+| `main.js` | Window, system tray, global shortcuts, Google sign-in handling |
+| `preload.js` | Secure bridge between the UI and `main.js` |
+| `index.html` | The entire UI: tabs, address bar, bookmarks, menus |
 
-Phát hành bản mới: tăng `version` trong `package.json`, chạy `npm run dist`, rồi tải file `dist/Dock-Web-Setup-<version>.exe` lên một Release mới trên GitHub.
+Releasing a new version: bump `version` in `package.json`, run `npm run dist`, then upload `dist/Dock-Web-Setup-<version>.exe` to a new GitHub Release.

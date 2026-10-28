@@ -14,9 +14,9 @@
   button:hover { background:var(--act); }
   button.on { background:var(--acc); }
 
-  /* Hàng 1 (giống Chrome): tab + nút cửa sổ. Vùng trống = chỗ nắm để kéo cửa sổ */
+  /* Row 1 (like Chrome): tabs + window buttons. Empty space = handle for dragging the window */
   #bar { display:flex; align-items:center; gap:4px; height:36px; padding:4px 6px 0; background:var(--bar); flex:none; -webkit-app-region:drag; user-select:none; }
-  /* Chỉ nút/tab là no-drag → khoảng trống giữa các tab, sau nút + … đều nắm kéo được */
+  /* Only buttons/tabs are no-drag → gaps between tabs, after the + button… can all be grabbed */
   #bar button, .tab { -webkit-app-region:no-drag; }
   #grab, #add, .win { margin-bottom:4px; }
   #grab { color:var(--mute); padding:2px 8px; font-size:16px; cursor:move; }
@@ -26,7 +26,7 @@
   #bar #close:hover { background:#da373c; }
   #tabs { display:flex; align-self:stretch; gap:2px; overflow-x:auto; flex:0 1 auto; min-width:0; scrollbar-width:none; }
   #tabs::-webkit-scrollbar { display:none; }
-  /* Tab co lại khi chật (160px → 48px), quá nữa thì cuộn ngang */
+  /* Tabs shrink when crowded (160px → 48px), beyond that they scroll horizontally */
   .tab { display:flex; align-items:center; gap:4px; flex:0 1 160px; min-width:48px; padding:0 8px 0 10px; border-radius:8px 8px 0 0; cursor:pointer; white-space:nowrap; }
   .tab:hover { background:#34363b; }
   .tab.on { background:var(--tool); }
@@ -37,7 +37,7 @@
   .tab.audible .snd, .tab.muted .snd { display:inline; }
   .win { display:flex; gap:2px; margin-left:auto; }
 
-  /* Hàng 2: ← → ⟳ + ô địa chỉ */
+  /* Row 2: ← → ⟳ + address bar */
   #nav { display:flex; align-items:center; gap:2px; padding:4px 6px; background:var(--tool); flex:none; }
   #nav button { width:28px; height:28px; padding:0; border-radius:50%; background:transparent; font-size:15px; }
   #nav button:hover { background:var(--act); }
@@ -54,7 +54,7 @@
   webview.on { visibility:visible; }
   #empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--mute); text-align:center; padding:16px; line-height:1.6; }
 
-  /* Thanh tìm trong trang (Ctrl+F) */
+  /* Find-in-page bar (Ctrl+F) */
   #find { position:absolute; top:6px; right:10px; z-index:5; display:none; align-items:center; gap:4px; padding:4px; background:var(--bar); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.45); }
   #find.on { display:flex; }
   #findIn { width:160px; background:var(--bg); color:var(--fg); border:1px solid var(--tab); border-radius:4px; padding:2px 6px; outline:none; }
@@ -68,7 +68,7 @@
   #overlay.on { display:flex; }
   #shield.on { display:block; cursor:nwse-resize; }
 
-  /* Gợi ý dưới ô địa chỉ: chữ đang gõ, lịch sử, gợi ý tìm kiếm của Google */
+  /* Suggestions under the address bar: typed text, history, Google search suggestions */
   #sug { position:fixed; z-index:25; display:none; overflow-y:auto; padding:3px; background:var(--bar); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.45); -webkit-app-region:no-drag; }
   #sug.on { display:block; }
   #sug div { display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius:4px; cursor:pointer; white-space:nowrap; }
@@ -80,7 +80,7 @@
   #sug b { flex:none; margin-left:auto; padding:0 2px; font-weight:normal; color:var(--mute); }
   #sug b:hover { color:#fff; }
 
-  /* Thanh dấu trang (giống Chrome) — chỉ hiện khi có ít nhất 1 dấu trang */
+  /* Bookmarks bar (like Chrome) — shown only when there is at least 1 bookmark */
   #marks { display:none; gap:2px; padding:0 6px 4px; background:var(--tool); flex:none; overflow-x:auto; scrollbar-width:none; -webkit-app-region:drag; user-select:none; }
   #marks.on { display:flex; }
   #marks::-webkit-scrollbar { display:none; }
@@ -91,7 +91,7 @@
   .mark span { overflow:hidden; text-overflow:ellipsis; outline:none; }
   .mark span[contenteditable] { background:var(--bg); padding:0 4px; border-radius:3px; text-overflow:clip; }
 
-  /* Menu nổi dùng chung: ⋯, chuột phải tab, chuột phải dấu trang */
+  /* Shared popup menu: ⋯, tab right-click, bookmark right-click */
   #menu { position:fixed; z-index:26; display:none; min-width:170px; max-height:calc(100vh - 8px); overflow-y:auto; padding:3px; background:var(--bar); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.45); -webkit-app-region:no-drag; user-select:none; }
   #menu.on { display:block; }
   #menu .mi { display:flex; align-items:center; gap:8px; padding:4px 10px 4px 6px; border-radius:4px; cursor:pointer; white-space:nowrap; }
@@ -155,8 +155,8 @@ const tabsEl = $('#tabs'), views = $('#views'), urlIn = $('#url'), overlay = $('
 const sug = $('#sug'), menu = $('#menu'), marksEl = $('#marks'), star = $('#star'), zoomBtn = $('#zoom');
 const findEl = $('#find'), findIn = $('#findIn'), findN = $('#findN');
 
-// Ghi localStorage gom lại tối đa 1 lần / 0,5s: trang kiểu TikTok/YouTube đổi URL liên tục khi cuộn,
-// ghi thẳng thì mỗi lần đổi URL lại serialize cả lịch sử (~1000 mục). Giá trị lấy lúc ghi → luôn mới nhất
+// Batch localStorage writes to at most once per 0.5s: sites like TikTok/YouTube change the URL constantly while scrolling,
+// and writing directly would serialize the whole history (~1000 entries) on every change. Values are read at flush time → always latest
 const pending = new Map();
 let flushTimer = null;
 function store(k, v) {
@@ -172,9 +172,9 @@ window.addEventListener('beforeunload', flush);
 function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }
 
 let tabs = [], active = null, closed = [];
-let hist = load('history', []);  // [{ url, title, n: số lần vào, t: lần cuối }]
+let hist = load('history', []);  // [{ url, title, n: visit count, t: last visit }]
 let marks = load('marks', []);   // [{ url, title, icon }]
-let zooms = load('zoom', {});    // { tên miền: hệ số thu phóng }
+let zooms = load('zoom', {});    // { host: zoom factor }
 let sugItems = [], sugSel = -1, moving = null, state = {};
 
 const SEARCH = 'https://www.google.com/search?q=';
@@ -193,7 +193,7 @@ const pretty = (u) => { try { u = decodeURI(u); } catch {} return u.replace(/^ht
 const hostOf = (u) => { try { return new URL(u).host; } catch { return ''; } };
 
 function save() {
-  const kept = tabs.filter(t => t.url); // tab mới chưa vào trang nào thì không cần nhớ
+  const kept = tabs.filter(t => t.url); // new tabs that never loaded a page don't need to be remembered
   store('tabs', kept.map(t => t.url));
   store('active', kept.indexOf(active));
 }
@@ -212,19 +212,19 @@ function visitTitle(url, title) {
 }
 
 // ---------- Tab ----------
-// raw rỗng = "Tab mới" trống như Chrome: webview chưa có src, gõ địa chỉ thì mở trong chính tab này.
-// lazy = chưa tải trang cho tới khi bấm vào tab (khôi phục tab cũ lúc mở app)
+// Empty raw = blank "New tab" like Chrome: the webview has no src yet; typing an address opens it in this tab.
+// lazy = don't load the page until the tab is clicked (restoring old tabs on launch)
 function openTab(raw, focus = true, lazy = false) {
   const url = raw ? norm(raw) : '';
   if (url === null) return;
   const wv = document.createElement('webview');
   if (url && !lazy) wv.setAttribute('src', url);
-  wv.setAttribute('partition', 'persist:dock'); // giữ đăng nhập/cookie
+  wv.setAttribute('partition', 'persist:dock'); // keep logins/cookies
   wv.setAttribute('allowpopups', '');
   const el = document.createElement('div');
   el.className = 'tab';
   el.innerHTML = '<i class="snd"></i><span></span><b title="Đóng (Ctrl+W)">×</b>';
-  const title = url && hist.find(h => h.url === url)?.title; // tab chưa tải thì lấy tiêu đề cũ trong lịch sử
+  const title = url && hist.find(h => h.url === url)?.title; // unloaded tabs take their old title from history
   const t = { url, wv, el, title, lazy: lazy && !!url };
   el.querySelector('span').textContent = title || (url ? url.replace(/^https?:\/\//, '') : 'Tab mới');
   el.onclick = () => select(t);
@@ -232,30 +232,30 @@ function openTab(raw, focus = true, lazy = false) {
   el.oncontextmenu = (e) => { e.preventDefault(); tabMenu(t, e); };
   el.querySelector('b').onclick = (e) => { e.stopPropagation(); close(t); };
   el.querySelector('.snd').onclick = (e) => { e.stopPropagation(); mute(t); };
-  // Chỉ xếp lại nút tab; webview giữ nguyên chỗ (di chuyển webview trong DOM sẽ tải lại trang)
+  // Only reorder the tab buttons; webviews stay in place (moving a webview in the DOM reloads the page)
   sortable(el, 'tabs', t, () => tabs, () => { tabs.forEach(x => tabsEl.appendChild(x.el)); save(); });
   wv.addEventListener('dom-ready', () => { t.ready = true; t.wcId = wv.getWebContentsId(); applyZoom(t); if (t === active) updNav(); });
   wv.addEventListener('page-title-updated', (e) => { t.title = e.title; el.querySelector('span').textContent = e.title; el.title = e.title; visitTitle(t.url, e.title); });
   wv.addEventListener('page-favicon-updated', (e) => {
     t.icon = e.favicons[0];
-    // Dấu trang lưu lúc trang chưa kịp có icon → bổ sung
+    // Bookmark saved before the page had an icon → fill it in
     const m = marks.find(x => x.url === t.url && !x.icon);
     if (m && t.icon) { m.icon = t.icon; saveMarks(); }
   });
   wv.addEventListener('found-in-page', (e) => {
     if (t !== active) return;
     findN.textContent = `${e.result.activeMatchOrdinal ?? 0}/${e.result.matches}`;
-    if (findEl.classList.contains('on')) findIn.focus(); // tìm xong trang hay giành focus → trả lại ô tìm
+    if (findEl.classList.contains('on')) findIn.focus(); // pages tend to grab focus after a find → give it back to the find box
   });
   const nav = (e) => {
     const sameHost = hostOf(e.url) === hostOf(t.url);
     t.url = e.url;
     if (active === t) {
-      // Đang gõ dở trong ô địa chỉ thì không ghi đè (trang tự chuyển hướng/đổi URL lúc mình đang gõ)
+      // Don't overwrite the address bar while the user is typing (the page may redirect/change URL meanwhile)
       if (document.activeElement !== urlIn) urlIn.value = e.url;
       wv.classList.add('on'); updEmpty(); updStar(); updNav();
     }
-    if (!sameHost) applyZoom(t); // thu phóng nhớ theo tên miền → chỉ cần đặt lại khi đổi miền
+    if (!sameHost) applyZoom(t); // zoom is remembered per host → only reapply when the host changes
     visit(e.url); save();
   };
   wv.addEventListener('did-navigate', nav);
@@ -273,7 +273,7 @@ function newTab() {
   urlIn.focus();
 }
 
-// Màn hình hướng dẫn hiện khi chưa có tab hoặc đang ở "Tab mới"
+// Help screen shown when there are no tabs or the active tab is a blank "New tab"
 function updEmpty() { $('#empty').style.display = active?.url ? 'none' : ''; }
 
 function select(t) {
@@ -283,7 +283,7 @@ function select(t) {
   tabs.forEach(x => { x.el.classList.toggle('on', x === t); x.wv.classList.toggle('on', x === t && !!x.url); });
   updEmpty();
   urlIn.value = t.url;
-  // block mặc định là 'start' → có thể cuộn lệch cả trang vài px dù body overflow:hidden
+  // block defaults to 'start' → can shift the whole page a few px even with body overflow:hidden
   t.el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   updStar();
   updZoom();
@@ -291,7 +291,7 @@ function select(t) {
   save();
 }
 
-// Nút ← → mờ đi khi không lùi/tới được, như Chrome
+// ← → buttons are dimmed when there's nothing to go back/forward to, like Chrome
 function updNav() {
   const ok = active?.ready;
   $('#back').disabled = !(ok && active.wv.canGoBack());
@@ -336,26 +336,26 @@ function tabMenu(t, e) {
   ], e.clientX, e.clientY);
 }
 
-// ---------- Thanh địa chỉ (giống Chrome) ----------
+// ---------- Address bar (like Chrome) ----------
 function go(raw) {
   const u = norm(raw);
   if (!u) return;
   urlIn.value = u;
-  urlIn.blur(); // như Chrome: Enter xong thì rời ô địa chỉ (ẩn gợi ý) → URL cuối sau chuyển hướng được hiện lên
+  urlIn.blur(); // like Chrome: leave the address bar after Enter (hides suggestions) → the final URL after redirects is shown
   if (!active) openTab(u);
-  else if (!active.ready) active.wv.setAttribute('src', u); // "Tab mới" chưa tải trang nào
+  else if (!active.ready) active.wv.setAttribute('src', u); // blank "New tab" that hasn't loaded anything yet
   else active.wv.loadURL(u);
 }
 
-// Gợi ý chỉ hiện khi đang gõ: dòng đầu = đúng chữ đang gõ (Enter mở dòng này),
-// rồi trang trong lịch sử, rồi gợi ý tìm kiếm của Google
+// Suggestions only show while typing: first row = the exact typed text (Enter opens it),
+// then pages from history, then Google search suggestions
 let sugTimer;
 function suggest() {
   const raw = urlIn.value.trim(), q = raw.toLowerCase();
   clearTimeout(sugTimer);
   if (!raw) return hideSug();
   const words = q.split(/\s+/).filter(Boolean);
-  // decode URL 1 lần mỗi mục (trước đây gọi lại trong hàm so sánh khi sort → hàng nghìn lần mỗi phím gõ)
+  // decode each URL once (previously done inside the sort comparator → thousands of times per keystroke)
   const hits = [];
   for (const h of hist) {
     const u = pretty(h.url).toLowerCase();
@@ -373,7 +373,7 @@ function suggest() {
 
   sugTimer = setTimeout(async () => {
     const list = await dock.suggest(raw);
-    if (urlIn.value.trim() !== raw || document.activeElement !== urlIn) return; // đã gõ tiếp → bỏ kết quả cũ
+    if (urlIn.value.trim() !== raw || document.activeElement !== urlIn) return; // user kept typing → drop stale results
     sugItems = sugItems.filter(x => x.kind !== 'google').concat(
       list.filter(s => s.toLowerCase() !== q).slice(0, 5).map(s => ({ kind: 'google', text: s, url: SEARCH + encodeURIComponent(s) })));
     renderSug();
@@ -395,7 +395,7 @@ function renderSug() {
     d.querySelector('.ti').textContent = ti;
     d.querySelector('.u').textContent = u;
     d.title = it.url;
-    // mousedown + preventDefault để ô URL không mất focus trước khi bấm xong
+    // mousedown + preventDefault so the URL box doesn't lose focus before the click completes
     d.onmousedown = (e) => { e.preventDefault(); go(it.url); };
     if (it.kind === 'hist') {
       const b = document.createElement('b');
@@ -418,7 +418,7 @@ function renderSug() {
 }
 function hideSug() { sug.classList.remove('on'); sugItems = []; sugSel = -1; }
 
-// Bấm lần đầu vào ô địa chỉ = chọn hết như Chrome → gõ là đè luôn link cũ
+// First click in the address bar selects everything like Chrome → typing replaces the old URL
 urlIn.addEventListener('mousedown', (e) => {
   if (document.activeElement === urlIn) return;
   e.preventDefault();
@@ -439,7 +439,7 @@ urlIn.addEventListener('keydown', (e) => {
   else if (e.key === 'Enter') go(sugSel >= 0 ? sugItems[sugSel].url : urlIn.value);
 });
 
-// ---------- Thu phóng: nhớ theo tên miền, giống Chrome ----------
+// ---------- Zoom: remembered per host, like Chrome ----------
 function applyZoom(t) {
   if (t.ready) t.wv.setZoomFactor(zooms[hostOf(t.url)] || 1);
   if (t === active) updZoom();
@@ -461,7 +461,7 @@ function updZoom() {
 }
 zoomBtn.onclick = () => zoom(0);
 
-// ---------- Tìm trong trang ----------
+// ---------- Find in page ----------
 function openFind() {
   if (!active) return;
   findEl.classList.add('on');
@@ -473,10 +473,10 @@ function closeFind() {
   if (!findEl.classList.contains('on')) return;
   findEl.classList.remove('on');
   findN.textContent = '';
-  // Chỉ tab đang xem có thể đang tìm (đổi tab là đóng thanh tìm trước)
+  // Only the active tab can have a find in progress (switching tabs closes the find bar first)
   if (active?.ready) active.wv.stopFindInPage('clearSelection');
 }
-// fresh = true: bắt đầu lượt tìm mới (đổi từ khoá); false: nhảy tới kết quả kế tiếp
+// fresh = true: start a new search (query changed); false: jump to the next match
 function runFind(forward = true, fresh = false) {
   if (!active?.ready) return;
   if (!findIn.value) { active.wv.stopFindInPage('clearSelection'); findN.textContent = ''; return; }
@@ -491,8 +491,8 @@ $('#findUp').onclick = () => runFind(false);
 $('#findDown').onclick = () => runFind(true);
 $('#findX').onclick = closeFind;
 
-// ---------- Thanh dấu trang ----------
-// ☆ lưu trang đang mở · bấm mở ở tab hiện tại · chuột giữa mở tab mới · chuột phải: menu · kéo để xếp lại
+// ---------- Bookmarks bar ----------
+// ☆ saves the current page · click opens in the current tab · middle-click opens a new tab · right-click: menu · drag to reorder
 function saveMarks() { store('marks', marks); renderMarks(); }
 
 function renderMarks() {
@@ -539,7 +539,7 @@ star.onclick = () => {
   saveMarks();
 };
 
-// Sửa tên ngay trên thanh: Enter/bấm ra ngoài = lưu, Esc = huỷ
+// Rename inline on the bar: Enter/click outside = save, Esc = cancel
 function rename(m, el) {
   const span = el.querySelector('span');
   span.contentEditable = 'true';
@@ -551,8 +551,8 @@ function rename(m, el) {
   span.onblur = () => done(true);
 }
 
-// ---------- Kéo thả để xếp lại tab / dấu trang ----------
-// Cờ `moving` để lớp phủ "Thả để mở tab" không bật lên khi kéo nội bộ
+// ---------- Drag to reorder tabs / bookmarks ----------
+// The `moving` flag keeps the "drop to open tab" overlay from appearing during internal drags
 function sortable(el, kind, item, list, done) {
   el.draggable = true;
   el.addEventListener('dragstart', (e) => { moving = { kind, item }; e.dataTransfer.effectAllowed = 'move'; });
@@ -568,8 +568,8 @@ function sortable(el, kind, item, list, done) {
   });
 }
 
-// ---------- Menu nổi ----------
-// item = { label, icon, hint, on, run } · '-' = vạch ngăn · Node = phần tử tự dựng
+// ---------- Popup menu ----------
+// item = { label, icon, hint, on, run } · '-' = separator · Node = custom element
 function popMenu(items, x, y, alignRight = false) {
   menu.replaceChildren(...items.map((it) => {
     if (it instanceof Node) return it;
@@ -614,7 +614,7 @@ $('#more').onclick = () => {
   ], r.right, r.bottom + 2, true);
 };
 
-// ---------- Nút & phím tắt ----------
+// ---------- Buttons & shortcuts ----------
 $('#add').onclick = newTab;
 $('#back').onclick = () => active?.ready && active.wv.canGoBack() && active.wv.goBack();
 $('#fwd').onclick = () => active?.ready && active.wv.canGoForward() && active.wv.goForward();
@@ -652,11 +652,11 @@ const keys = {
 dock.onKey((a) => {
   const n = /^tab(\d)$/.exec(a);
   if (!n) return keys[a]?.();
-  const t = n[1] === '9' ? tabs.at(-1) : tabs[n[1] - 1]; // Ctrl+9 = tab cuối, như Chrome
+  const t = n[1] === '9' ? tabs.at(-1) : tabs[n[1] - 1]; // Ctrl+9 = last tab, like Chrome
   if (t) select(t);
 });
 
-// Kéo thả link / URL / file → khi kéo vào cửa sổ, lớp phủ hiện lên che trang web để bắt được cú thả
+// Drag & drop links / URLs / files → when dragging into the window, an overlay covers the page to catch the drop
 window.addEventListener('dragover', (e) => e.preventDefault());
 window.addEventListener('drop', (e) => e.preventDefault());
 window.addEventListener('dragenter', (e) => { e.preventDefault(); if (!moving) overlay.classList.add('on'); });
@@ -675,7 +675,7 @@ overlay.addEventListener('drop', (e) => {
   if (u) openTab(u);
 });
 
-// Kéo góc dưới-phải để resize (bổ sung cho kéo mép cửa sổ)
+// Drag the bottom-right corner to resize (in addition to dragging the window edges)
 $('#corner').addEventListener('mousedown', (e) => {
   e.preventDefault();
   shield.classList.add('on');
@@ -686,10 +686,10 @@ shield.addEventListener('mouseup', stop);
 window.addEventListener('mouseup', stop);
 window.addEventListener('blur', stop);
 
-// Khôi phục dấu trang + tab lần trước
-try { localStorage.removeItem('mobile'); } catch {} // dọn cài đặt của tính năng giao diện điện thoại đã bỏ
+// Restore bookmarks + tabs from last session
+try { localStorage.removeItem('mobile'); } catch {} // clean up the setting from the removed mobile-view feature
 renderMarks();
-// Chỉ tải trang của tab đang xem; tab khác tải khi bấm vào (mỗi trang = 1 tiến trình, tải hết cùng lúc rất nặng)
+// Only load the active tab's page; others load when clicked (each page = 1 process, loading all at once is heavy)
 load('tabs', []).forEach((u) => openTab(u, false, true));
 if (tabs.length) select(tabs[load('active', 0)] ?? tabs[0]);
 </script>

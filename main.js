@@ -2,8 +2,8 @@ const { app, BrowserWindow, screen, globalShortcut, ipcMain, Tray, Menu, nativeI
 const path = require('path');
 const fs = require('fs');
 
-// Bản cài đặt có tên "Dock Web" → mặc định lưu dữ liệu chỗ khác bản `npm start`.
-// Cố định một thư mục để hai bản dùng chung tab, dấu trang, lịch sử, đăng nhập
+// The installed build is named "Dock Web" → by default it stores data somewhere other than `npm start`.
+// Pin one folder so both share tabs, bookmarks, history and logins
 app.setPath('userData', path.join(app.getPath('appData'), 'dock-web'));
 
 const cfgFile = () => path.join(app.getPath('userData'), 'float-config.json');
@@ -21,7 +21,7 @@ function saveCfg() {
   }, 300);
 }
 
-// Icon vẽ bằng code (ô vuông bo góc + thanh trắng = panel dock) → khỏi cần file ảnh
+// Icon drawn in code (rounded square + white bar = dock panel) → no image file needed
 function makeIcon() {
   const S = 32, r = 7, buf = Buffer.alloc(S * S * 4);
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
@@ -29,19 +29,19 @@ function makeIcon() {
     if (Math.hypot(x + 0.5 - cx, y + 0.5 - cy) > r) continue;
     const bar = y >= 19 && y < 25 && x >= 7 && x < 25;
     const [R, G, B] = bar ? [255, 255, 255] : [0x58, 0x65, 0xf2];
-    buf.set([B, G, R, 255], (y * S + x) * 4); // bitmap thô dạng BGRA
+    buf.set([B, G, R, 255], (y * S + x) * 4); // raw BGRA bitmap
   }
   return nativeImage.createFromBitmap(buf, { width: S, height: S, scaleFactor: 2 });
 }
 
-// Vị trí mặc định: nửa dưới màn hình chính
+// Default position: lower half of the primary display
 function defaultBounds() {
   const wa = screen.getPrimaryDisplay().workArea;
   const width = Math.round(wa.width * 0.6), height = Math.round(wa.height * 0.45);
   return { x: wa.x + Math.round((wa.width - width) / 2), y: wa.y + wa.height - height - 20, width, height };
 }
 
-// Bỏ vị trí đã lưu nếu nó nằm ngoài các màn hình hiện có (vd rút màn hình phụ)
+// Discard the saved position if it lies outside the current displays (e.g. a secondary monitor was unplugged)
 function validBounds(b) {
   if (!b || b.width < 240 || b.height < 160) return null;
   const visible = screen.getAllDisplays().some(({ workArea: w }) =>
@@ -76,12 +76,12 @@ function createWindow() {
   const remember = () => { if (!win.isMinimized()) { cfg.bounds = win.getBounds(); saveCfg(); } };
   win.on('move', remember);
   win.on('resize', remember);
-  // ✕ / Alt+F4 chỉ ẩn xuống khay; thoát hẳn qua menu ⋯ hoặc icon ở khay
+  // ✕ / Alt+F4 only hides to the tray; quit for real via the ⋯ menu or the tray icon
   win.on('close', (e) => { if (!quitting) { e.preventDefault(); hide(); } });
 }
 
 function applyPin() {
-  // 'screen-saver' = mức cao nhất, đè lên cả app toàn màn hình
+  // 'screen-saver' = highest level, stays above even fullscreen apps
   win.setAlwaysOnTop(cfg.pinned, 'screen-saver');
   win.setVisibleOnAllWorkspaces(cfg.pinned, { visibleOnFullScreen: true });
 }
@@ -112,7 +112,7 @@ function togglePin() {
   sendState();
 }
 
-// Xuyên chuột: cửa sổ mờ đi, mọi cú bấm rơi xuống app bên dưới
+// Click-through: the window fades and every click falls through to the app underneath
 function toggleGhost() {
   ghost = !ghost;
   win.setIgnoreMouseEvents(ghost);
@@ -135,7 +135,7 @@ function trayMenu() {
   ]);
 }
 
-// Gắn nhanh vào một cạnh màn hình (sau đó vẫn kéo đi tự do được)
+// Snap to a screen edge (the window can still be dragged freely afterwards)
 function snap(side) {
   const wa = screen.getDisplayMatching(win.getBounds()).workArea;
   const b = win.getBounds();
@@ -149,7 +149,7 @@ function snap(side) {
   if (map[side]) win.setBounds(map[side]);
 }
 
-// Phím tắt: bắt ở main vì khi đang ở trong trang web, webview nuốt hết phím
+// Shortcuts: caught in main because while focus is inside a page, the webview swallows all keys
 function keyAction(i) {
   if (i.type !== 'keyDown') return null;
   const k = i.key.length === 1 ? i.key.toLowerCase() : i.key;
@@ -178,7 +178,7 @@ function hookKeys(contents) {
   });
 }
 
-// Kéo góc để resize: main đọc vị trí chuột thật → không lệch khi Windows scale 125%/150%
+// Corner-drag resize: main reads the real cursor position → no drift at Windows 125%/150% scaling
 ipcMain.on('resize-start', () => {
   const start = screen.getCursorScreenPoint();
   const b0 = win.getBounds();
@@ -203,7 +203,7 @@ ipcMain.on('maximize', () => (win.isMaximized() ? win.unmaximize() : win.maximiz
 ipcMain.on('hide', hide);
 ipcMain.on('quit', () => app.quit());
 
-// Gợi ý tìm kiếm của Google cho ô địa chỉ (gọi từ main vì trang file:// bị chặn CORS)
+// Google search suggestions for the address bar (fetched from main because the file:// page is blocked by CORS)
 ipcMain.handle('suggest', async (_e, q) => {
   try {
     const r = await net.fetch('https://suggestqueries.google.com/complete/search?client=chrome&hl=vi&ie=utf-8&oe=utf-8&q=' + encodeURIComponent(q));
@@ -211,16 +211,16 @@ ipcMain.handle('suggest', async (_e, q) => {
   } catch { return []; }
 });
 
-// Google chặn đăng nhập trong trình duyệt nhúng ("This browser or app may not be secure").
-// Cách Ferdium/Rambox dùng: riêng trang đăng nhập Google thì xưng là Firefox
+// Google blocks sign-in inside embedded browsers ("This browser or app may not be secure").
+// Same trick as Ferdium/Rambox: identify as Firefox on the Google sign-in page only
 const GOOGLE_LOGIN = 'https://accounts.google.com/';
 const FIREFOX_UA = (() => {
-  // Firefox ra bản mới ~4 tuần/lần; tính bước 30 ngày để không bao giờ xưng bản chưa phát hành
+  // Firefox ships a new version every ~4 weeks; step by 30 days so we never claim an unreleased version
   const v = 128 + Math.floor((Date.now() - Date.UTC(2024, 6, 9)) / (30 * 864e5));
   return `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:${v}.0) Gecko/20100101 Firefox/${v}.0`;
 })();
 
-// Header: đổi User-Agent + bỏ Sec-CH-UA* (Firefox không gửi các header này, để lại là lộ Chromium)
+// Headers: swap User-Agent + drop Sec-CH-UA* (Firefox never sends these; leaving them exposes Chromium)
 function googleLoginHeaders(ses) {
   ses.webRequest.onBeforeSendHeaders({ urls: [GOOGLE_LOGIN + '*'] }, (d, cb) => {
     const h = d.requestHeaders;
@@ -229,7 +229,7 @@ function googleLoginHeaders(ses) {
     cb({ requestHeaders: h });
   });
 }
-// navigator.userAgent trong trang: đổi khi vào trang đăng nhập, trả lại UA cũ khi rời đi
+// navigator.userAgent in the page: swap on entering the sign-in page, restore the original UA on leaving
 function googleLoginUA(contents) {
   let orig = null;
   contents.on('did-start-navigation', ({ url, isMainFrame }) => {
@@ -241,14 +241,14 @@ function googleLoginUA(contents) {
 }
 
 app.on('web-contents-created', (_e, contents) => {
-  googleLoginUA(contents); // cả tab lẫn cửa sổ popup đăng nhập
+  googleLoginUA(contents); // both tabs and sign-in popup windows
   if (contents.getType() !== 'webview') return;
   hookKeys(contents);
-  // Ctrl + lăn chuột trong trang → renderer thu phóng theo tên miền
+  // Ctrl + mouse wheel in the page → renderer zooms per domain
   contents.on('zoom-changed', (_e, dir) => win?.webContents.send('key', dir === 'in' ? 'zoomIn' : 'zoomOut'));
   contents.on('audio-state-changed', (e) => win?.webContents.send('audio', contents.id, e.audible));
-  // Popup có kích thước (vd "Đăng nhập bằng Google") → cửa sổ con thật để trang gốc nhận được kết quả.
-  // Link target=_blank → tab mới
+  // Sized popups (e.g. "Sign in with Google") → a real child window so the opener page receives the result.
+  // target=_blank links → new tab
   contents.setWindowOpenHandler(({ url, disposition }) => {
     if (disposition === 'new-window') {
       return { action: 'allow', overrideBrowserWindowOptions: { parent: win, icon, autoHideMenuBar: true, width: 520, height: 680 } };
@@ -262,8 +262,8 @@ if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => win && show());
 
 app.whenReady().then(() => {
-  // UA giống Chrome thật: bỏ "Electron/…" + tên app, và chỉ để số bản chính (Chrome/156.0.0.0) —
-  // Chrome thật không bao giờ gửi số build đầy đủ, Google coi đó là dấu hiệu trình duyệt nhúng
+  // UA like real Chrome: drop "Electron/…" + the app name, and keep only the major version (Chrome/156.0.0.0) —
+  // real Chrome never sends the full build number; Google treats that as a sign of an embedded browser
   app.userAgentFallback = app.userAgentFallback
     .replace(/ Electron\/\S+/, '')
     .replace(` ${app.getName()}/${app.getVersion()}`, '')
@@ -276,7 +276,7 @@ app.whenReady().then(() => {
   tray.on('click', show);
   tray.setContextMenu(trayMenu());
   createWindow();
-  // Phím tắt toàn hệ thống có thể bị app khác (Unikey, app chụp màn hình…) chiếm trước → báo thay vì im lặng
+  // Global shortcuts may already be taken by other apps (Unikey, screenshot tools…) → notify instead of failing silently
   const taken = [['Ctrl+Shift+Space', toggle], ['Ctrl+Alt+Space', toggleGhost]]
     .filter(([k, fn]) => !globalShortcut.register(k.replace('Ctrl', 'CommandOrControl'), fn))
     .map(([k]) => k);
