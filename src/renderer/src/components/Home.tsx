@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { go, hideSite, hideSug, openTab, suggest, topSites, urlKey } from '../browser';
+import { go, hideSite, hideSug, openTab, showSites, suggest, topSites, urlKey } from '../browser';
 import logo from '../../../../build/icon.ico'; // the app icon, same file as the installer's
 import { Fav, Icon } from './Icon';
 
@@ -18,6 +18,13 @@ export function Home() {
     const t = setInterval(() => setClock(now), 1000);
     return () => clearInterval(t);
   }, []);
+  // Host just hidden → notice with "Hoàn tác" / "Khôi phục tất cả" for a few seconds, like Chrome
+  const [undo, setUndo] = useState('');
+  useEffect(() => {
+    if (!undo) return;
+    const t = setTimeout(() => setUndo(''), 6000);
+    return () => clearTimeout(t);
+  }, [undo]);
   const sites = topSites();
   return (
     <div id="home">
@@ -39,15 +46,23 @@ export function Home() {
               {/* No favicon → first letter, like Chrome's tiles */}
               <Fav className="sico" src={s.icon} fallback={s.title[0].toUpperCase()} />
               <span>{s.title}</span>
-              <b title="Ẩn khỏi trang chủ" onClick={(e) => { e.stopPropagation(); hideSite(s.host); }}><Icon name="x" /></b>
+              <b title="Ẩn khỏi trang chủ" onClick={(e) => { e.stopPropagation(); hideSite(s.host); setUndo(s.host); }}><Icon name="x" /></b>
             </div>
           ))}
         </div>
       )}
-      <div className="hint">
-        Kéo link thả vào cửa sổ để mở · nắm chỗ trống trên thanh để di chuyển · kéo mép hoặc góc để đổi kích thước<br />
-        Ctrl + Shift + Space: ẩn/hiện · Ctrl + Alt + Space: xuyên chuột
-      </div>
+      {undo ? (
+        <div className="toast">
+          Đã ẩn trang
+          <button onClick={() => { showSites(undo); setUndo(''); }}>Hoàn tác</button>
+          <button onClick={() => { showSites(); setUndo(''); }}>Khôi phục tất cả</button>
+        </div>
+      ) : (
+        <div className="hint">
+          Kéo link thả vào cửa sổ để mở · nắm chỗ trống trên thanh để di chuyển · kéo mép hoặc góc để đổi kích thước<br />
+          Ctrl + Shift + Space: ẩn/hiện · Ctrl + Alt + Space: xuyên chuột
+        </div>
+      )}
     </div>
   );
 }

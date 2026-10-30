@@ -125,6 +125,12 @@ export function hideSite(host: string) {
   store('hiddenSites', hiddenSites);
   emit();
 }
+// Undo hiding one tile, or (no host) bring back every hidden tile
+export function showSites(host?: string) {
+  hiddenSites = host ? hiddenSites.filter((h) => h !== host) : [];
+  store('hiddenSites', hiddenSites);
+  emit();
+}
 
 // ---------- Tab ----------
 // Empty raw = blank "New tab" like Chrome: the webview has no src yet; typing an address opens it in this tab.
