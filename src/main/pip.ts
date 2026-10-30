@@ -35,7 +35,7 @@ export function fadePip(opacity: number) {
   EnumWindows((h: unknown) => {
     const pid = [0];
     GetWindowThreadProcessId(h, pid);
-    if (pid[0] === process.pid && IsWindowVisible(h) && !ours.includes(BigInt(koffi.address(h)))) {
+    if (pid[0] === process.pid && IsWindowVisible(h) && !ours.includes(koffi.address(h))) {
       SetWindowLongPtrW(h, GWL_EXSTYLE, GetWindowLongPtrW(h, GWL_EXSTYLE) | WS_EX_LAYERED);
       SetLayeredWindowAttributes(h, 0, Math.round(opacity * 255), LWA_ALPHA);
     }

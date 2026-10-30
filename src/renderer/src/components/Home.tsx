@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { go, hideSite, openTab, topSites, urlIn } from '../browser';
+import { go, hideSite, hideSug, openTab, suggest, topSites, urlKey } from '../browser';
+import logo from '../../../../build/icon.ico'; // the app icon, same file as the installer's
 import { Fav, Icon } from './Icon';
 
 // One string → React skips re-rendering until the minute changes
@@ -21,14 +22,15 @@ export function Home() {
   return (
     <div id="home">
       <div className="clock">
+        <div className="brand"><img src={logo} alt="" /><span>Dock <b>Web</b></span></div>
         <div className="time">{time}</div>
         <div className="date">{date}</div>
       </div>
-      {/* Stand-in box like Chrome's: typing happens in the address bar, which already has suggestions and Enter/Esc */}
-      <div className="hsearch" onMouseDown={(e) => { e.preventDefault(); urlIn.focus(); urlIn.select(); }}>
+      {/* Same suggestions and keys as the address bar, shown under this box */}
+      <label className="hsearch">
         <Icon name="search" />
-        Tìm trên Google hoặc nhập URL
-      </div>
+        <input placeholder="Tìm trên Google hoặc nhập URL" spellCheck={false} onInput={suggest} onBlur={hideSug} onKeyDown={urlKey} />
+      </label>
       {sites.length > 0 && (
         // Up to 4 per row (2 rows, like Chrome); tiles shrink rather than wrap when the window is narrow
         <div className="sites" style={{ gridTemplateColumns: `repeat(${Math.min(4, sites.length)}, minmax(0, 92px))` }}>

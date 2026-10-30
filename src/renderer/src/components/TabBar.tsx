@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, type MouseEvent } from 'react';
 import type { Theme } from '../../../shared/ipc';
 import { active, clearHistory, close, mute, newTab, popMenu, save, select, sortable, state, tabs, toggleMenu, update, type MenuItem, type Tab } from '../browser';
+import { pretty } from '../url';
 import { Fav, Icon } from './Icon';
 
 // Row 1 (like Chrome): tabs + window buttons. Empty space = handle for dragging the window
@@ -29,7 +30,7 @@ function TabItem({ t }: { t: Tab }) {
   const on = t === active;
   // block defaults to 'start' → can shift the whole page a few px even with body overflow:hidden
   useLayoutEffect(() => { if (on) ref.current!.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }, [on]);
-  const title = t.title || (t.url ? t.url.replace(/^https?:\/\//, '') : 'Tab mới');
+  const title = t.title || (t.url ? pretty(t.url) : 'Tab mới');
   return (
     <div
       ref={ref}

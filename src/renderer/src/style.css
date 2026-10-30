@@ -1,4 +1,4 @@
-:root { color-scheme:light dark; --bg:#1e1f22; --bar:#2b2d31; --tool:#3a3c42; --tab:#383a40; --act:#4e5058; --fg:#e6e6e6; --mute:#9a9ca3; --acc:#5865f2;
+:root { color-scheme:light dark; --bg:#1e1f22; --bar:#2b2d31; --tool:#3a3c42; --tab:#383a40; --act:#4e5058; --fg:#e6e6e6; --mute:#9a9ca3; --acc:#1467f2;
         --pop:#2b2d31; --hov:#34363b; --line:#3a3c42; --edge:#1a1b1e; --shadow:rgba(0,0,0,.45); }
 /* Light theme. ⋯ → Theo hệ thống / Sáng / Tối sets nativeTheme.themeSource in main → this media query follows it (like Chrome) */
 @media (prefers-color-scheme: light) {
@@ -74,12 +74,18 @@ webview.on { visibility:visible; }
 /* Home page on a blank tab (like Chrome's new tab page). Parts drop out as the window gets small
    (container heights below = #home minus its 32px padding) */
 #home { position:absolute; inset:0; container-type:size; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px; padding:16px; overflow:hidden; user-select:none; }
-#home .clock { text-align:center; }
+#home .clock { display:flex; flex-direction:column; align-items:center; }
+/* Logo: "Dock" in the text color (readable in both themes), "Web" in the logo's blue gradient */
+#home .brand { display:flex; align-items:center; gap:10px; margin-bottom:20px; font-size:22px; font-weight:700; letter-spacing:-.3px; }
+#home .brand img { width:32px; height:32px; }
+#home .brand b { background:linear-gradient(90deg, #1467f2, #15a3fd); -webkit-background-clip:text; background-clip:text; color:transparent; }
 #home .time { font-size:56px; font-weight:300; line-height:1; }
 #home .date { margin-top:8px; color:var(--mute); font-size:14px; }
 #home .hsearch { display:flex; align-items:center; gap:12px; flex:none; width:min(560px, 100%); height:46px; padding:0 18px; background:var(--tool); border:1px solid var(--line); border-radius:23px; box-shadow:0 2px 8px var(--shadow); color:var(--mute); font-size:14px; cursor:text; }
 #home .hsearch:hover { border-color:var(--act); }
+#home .hsearch:focus-within { border-color:var(--acc); }
 #home .hsearch .ic { width:18px; height:18px; }
+#home .hsearch input { flex:1; min-width:0; padding:0; background:transparent; color:var(--fg); border:0; outline:none; font:inherit; }
 #home .sites { display:grid; gap:4px; max-width:100%; } /* columns set in Home.tsx */
 .site { position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; padding:12px 4px 10px; border-radius:8px; cursor:pointer; }
 .site:hover { background:var(--hov); }
@@ -91,6 +97,7 @@ webview.on { visibility:visible; }
 .site b:hover { background:var(--act); color:var(--fg); }
 .site b .ic { width:12px; height:12px; }
 #home .hint { position:absolute; left:16px; right:16px; bottom:14px; color:var(--mute); font-size:11px; line-height:1.7; text-align:center; opacity:.75; }
+@container (max-height: 560px) { #home .brand { display:none; } }
 @container (max-height: 480px) { #home .clock { display:none; } }
 @container (max-height: 360px) { #home .hint { display:none; } #home .site:nth-child(n+5) { display:none; } }
 @container (max-height: 200px) { #home .sites { display:none; } }
@@ -107,7 +114,7 @@ webview.on { visibility:visible; }
 #corner { position:fixed; right:0; bottom:0; width:16px; height:16px; z-index:20; cursor:nwse-resize;
   background:linear-gradient(135deg, transparent 55%, var(--mute) 55%, var(--mute) 62%, transparent 62%, transparent 75%, var(--mute) 75%, var(--mute) 82%, transparent 82%); }
 #overlay, #shield { position:fixed; inset:0; z-index:30; display:none; -webkit-app-region:no-drag; }
-#overlay { background:rgba(88,101,242,.25); border:3px dashed var(--acc); align-items:center; justify-content:center; font-size:18px; }
+#overlay { background:rgba(20,103,242,.25); border:3px dashed var(--acc); align-items:center; justify-content:center; font-size:18px; }
 #overlay.on { display:flex; }
 #shield.on { display:block; cursor:nwse-resize; }
 

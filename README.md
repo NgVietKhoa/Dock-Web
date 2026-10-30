@@ -1,4 +1,4 @@
-# Dock Web
+<h1 align="center"><img src="docs/logo.png" alt="Dock Web" width="360"></h1>
 
 A small browser window that always floats on top of the screen: watch YouTube, chat, or look things up while working in another app, without switching back and forth.
 

@@ -1,18 +1,16 @@
 import { useLayoutEffect, useRef } from 'react';
-import { active, back, forget, forward, go, hideSug, marks, pip, reload, setUrlIn, suggest, sugItems, sugSel, toggleStar, urlIn, urlKey, zoom, zooms } from '../browser';
+import { active, back, forget, forward, go, hideSug, marks, pip, reload, setUrlIn, suggest, sugIn, sugItems, sugSel, toggleStar, urlIn, urlKey, zoom, zooms } from '../browser';
 import { hostOf, pretty } from '../url';
 import { Icon } from './Icon';
 
 // Row 2: ← → ⟳ + address bar
 export function NavBar() {
-  const ok = !!active?.ready;
   const z = active ? zooms[hostOf(active.url)] || 1 : 1;
   const starred = !!active && marks.some((m) => m.url === active!.url);
   return (
     <div id="nav">
-      {/* ← → are dimmed when there's nothing to go back/forward to, like Chrome */}
-      <button id="back" title="Lùi (Alt+←)" disabled={!(ok && active!.wv.canGoBack())} onClick={back}><Icon name="back" /></button>
-      <button id="fwd" title="Tới (Alt+→)" disabled={!(ok && active!.wv.canGoForward())} onClick={forward}><Icon name="forward" /></button>
+      <button id="back" title="Lùi (Alt+←)" disabled={!active?.canBack} onClick={back}><Icon name="back" /></button>
+      <button id="fwd" title="Tới (Alt+→)" disabled={!active?.canFwd} onClick={forward}><Icon name="forward" /></button>
       <button id="reload" title="Tải lại (F5)" onClick={reload}><Icon name="reload" /></button>
       <div className="omni">
         <input
@@ -43,12 +41,12 @@ export function NavBar() {
 
 const SUG_ICON = { search: 'search', google: 'search', url: 'globe', hist: 'history' };
 
-// Suggestions under the address bar: typed text, history, Google search suggestions
+// Suggestions under the box being typed in (address bar or home page search): typed text, history, Google search suggestions
 export function Suggestions() {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (!sugItems.length) return;
-    const r = urlIn.parentElement!.getBoundingClientRect(), s = ref.current!.style;
+    const r = sugIn.parentElement!.getBoundingClientRect(), s = ref.current!.style;
     s.left = r.left + 'px';
     s.top = r.bottom + 2 + 'px';
     s.width = Math.min(r.width, innerWidth - r.left - 6) + 'px';

@@ -21,7 +21,8 @@ export function Bookmarks() {
     const i = els.findIndex((x) => x.getBoundingClientRect().right > limit);
     if (i >= 0) els.slice(i).forEach((x) => (x.hidden = true));
   };
-  useLayoutEffect(fit);
+  // Re-measure only when what's shown changes (texts/order); window resizes are handled by the ResizeObserver
+  useLayoutEffect(fit, [marks.map((m) => m.title || m.url).join('\n')]);
   useEffect(() => {
     const ro = new ResizeObserver(fit);
     ro.observe(bar.current!);

@@ -1,5 +1,7 @@
+/// <reference types="electron-vite/node" />
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, nativeTheme, screen, Tray, type NativeImage, type Rectangle } from 'electron';
 import path from 'path';
+import iconFile from '../../build/icon.ico?asset'; // same icon as the installer; .ico holds every size 16–256px
 import type { Theme, UiEvents } from '../shared/ipc';
 import { fadePip, togglePip } from './pip';
 import { cfg, saveCfg } from './store';
@@ -13,19 +15,6 @@ let ghost = false, quitting = false;
 // Message to the UI; channels and their arguments are listed in shared/ipc.ts
 export function send<K extends keyof UiEvents>(channel: K, ...args: UiEvents[K]) {
   win?.webContents.send(channel, ...args);
-}
-
-// Icon drawn in code (rounded square + white bar = dock panel) → no image file needed
-function makeIcon() {
-  const S = 32, r = 7, buf = Buffer.alloc(S * S * 4);
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    const cx = Math.min(Math.max(x + 0.5, r), S - r), cy = Math.min(Math.max(y + 0.5, r), S - r);
-    if (Math.hypot(x + 0.5 - cx, y + 0.5 - cy) > r) continue;
-    const bar = y >= 19 && y < 25 && x >= 7 && x < 25;
-    const [R, G, B] = bar ? [255, 255, 255] : [0x58, 0x65, 0xf2];
-    buf.set([B, G, R, 255], (y * S + x) * 4); // raw BGRA bitmap
-  }
-  return nativeImage.createFromBitmap(buf, { width: S, height: S, scaleFactor: 2 });
 }
 
 // Default position: lower half of the primary display
@@ -78,7 +67,7 @@ export function createWindow() {
 app.on('before-quit', () => { quitting = true; });
 
 export function createTray() {
-  icon = makeIcon();
+  icon = nativeImage.createFromPath(iconFile);
   tray = new Tray(icon);
   tray.setToolTip('Dock Web');
   tray.on('click', show);

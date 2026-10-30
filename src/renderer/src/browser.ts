@@ -14,7 +14,7 @@ function subscribe(fn: () => void) {
   return () => { listeners.delete(fn); };
 }
 export const useBrowser = () => useSyncExternalStore(subscribe, () => version);
-export function emit() {
+function emit() {
   version++;
   flushSync(() => listeners.forEach((f) => f()));
 }
@@ -27,6 +27,8 @@ export interface Tab {
   icon?: string;
   lazy: boolean; // restored tab whose page isn't loaded until clicked
   ready?: boolean; // dom-ready fired → webview methods can be called
+  canBack?: boolean; // cached: canGoBack() is a sync call to main, too slow to run on every render
+  canFwd?: boolean;
   wcId?: number;
   media?: boolean;
   audible?: boolean;
@@ -38,7 +40,7 @@ export type MenuItem = { label: string; icon?: string; fav?: string; tip?: strin
 
 export let tabs: Tab[] = [], active: Tab | null = null;
 let closed: string[] = [];
-export let hist: HistoryEntry[] = [];
+let hist: HistoryEntry[] = [];
 export let marks: Bookmark[] = [];
 export let zooms: Record<string, number> = {};
 let hiddenSites: string[] = [];
@@ -111,7 +113,8 @@ export function topSites() {
     let s = sites.get(u.hostname);
     if (!s) sites.set(u.hostname, (s = { host: u.hostname, url: u.origin + '/', title: u.hostname.replace(/^www\./, ''), n: 0 }));
     s.n += h.n;
-    if (u.pathname === '/' && h.title) s.title = h.title; // the site's home page title names it best ("YouTube", "Facebook")
+    // The site's home page title names it best ("YouTube", "Facebook"), minus the unread counter: "(4) YouTube"
+    if (u.pathname === '/' && h.title) s.title = h.title.replace(/^\(\d+\+?\)\s*/, '');
     s.icon ||= h.icon;
   }
   return [...sites.values()].sort((a, b) => b.n - a.n).slice(0, 8);
@@ -136,7 +139,7 @@ export function openTab(raw?: string, focus = true, lazy = false) {
   wv.setAttribute('allowpopups', '');
   const h = url ? hist.find((x) => x.url === url) : undefined; // unloaded tabs take their old title/icon from history
   const t: Tab = { id: nextId++, url, wv, title: h?.title, icon: h?.icon, lazy: lazy && !!url };
-  wv.addEventListener('dom-ready', () => { t.ready = true; t.wcId = wv.getWebContentsId(); applyZoom(t); emit(); });
+  wv.addEventListener('dom-ready', () => { t.ready = true; t.wcId = wv.getWebContentsId(); applyZoom(t); updNav(t); emit(); });
   wv.addEventListener('page-title-updated', (e) => { t.title = e.title; visitSet(t.url, 'title', e.title); emit(); });
   wv.addEventListener('page-favicon-updated', (e) => {
     t.icon = e.favicons[0];
@@ -161,6 +164,7 @@ export function openTab(raw?: string, focus = true, lazy = false) {
       wv.classList.add('on');
     }
     if (!sameHost) { applyZoom(t); t.icon = ''; } // zoom is remembered per host → only reapply when the host changes; the new site sends its own favicon
+    updNav(t);
     visit(e.url);
     save();
     emit();
@@ -171,10 +175,16 @@ export function openTab(raw?: string, focus = true, lazy = false) {
   wv.addEventListener('did-navigate-in-page', (e) => e.isMainFrame && nav(e));
   views.appendChild(wv);
   tabs.push(t);
-  if (focus) select(t);
-  save();
-  emit();
+  if (focus) select(t); // saves + re-renders
+  else { save(); emit(); }
   return t;
+}
+
+// ← → buttons are dimmed when there's nothing to go back/forward to, like Chrome
+function updNav(t: Tab) {
+  if (!t.ready) return;
+  t.canBack = t.wv.canGoBack();
+  t.canFwd = t.wv.canGoForward();
 }
 
 export function newTab() {
@@ -203,7 +213,8 @@ export function close(t: Tab) {
   const i = tabs.indexOf(t);
   t.wv.remove();
   tabs.splice(i, 1);
-  if (active === t) { active = null; if (tabs.length) select(tabs[Math.max(0, i - 1)]); }
+  if (active === t && tabs.length) return select(tabs[Math.max(0, i - 1)]); // saves + re-renders
+  if (active === t) active = null;
   if (!tabs.length) urlIn.value = '';
   save();
   emit();
@@ -229,7 +240,8 @@ export function go(raw: string) {
   const u = norm(raw);
   if (!u) return;
   urlIn.value = u;
-  urlIn.blur(); // like Chrome: leave the address bar after Enter (hides suggestions) → the final URL after redirects is shown
+  // Like Chrome: leave the address bar / home search after Enter (hides suggestions) → the final URL after redirects is shown
+  (document.activeElement as HTMLElement | null)?.blur();
   if (!active) openTab(u);
   else if (!active.ready) active.wv.setAttribute('src', u); // blank "New tab" that hasn't loaded anything yet
   else active.wv.loadURL(u);
@@ -237,10 +249,13 @@ export function go(raw: string) {
 }
 
 // Suggestions only show while typing: first row = the exact typed text (Enter opens it),
-// then pages from history, then Google search suggestions
+// then pages from history, then Google search suggestions.
+// Typed in the address bar or the home page's search box → sugIn = the box they show under
 let sugTimer: ReturnType<typeof setTimeout> | undefined;
-export function suggest() {
-  const raw = urlIn.value.trim(), q = raw.toLowerCase();
+export let sugIn: HTMLInputElement;
+export function suggest(e?: { currentTarget: HTMLInputElement }) {
+  if (e) sugIn = e.currentTarget;
+  const box = sugIn, raw = box.value.trim(), q = raw.toLowerCase();
   clearTimeout(sugTimer);
   if (!raw) return hideSug();
   const words = q.split(/\s+/).filter(Boolean);
@@ -262,7 +277,7 @@ export function suggest() {
 
   sugTimer = setTimeout(async () => {
     const list = await dock.suggest(raw);
-    if (urlIn.value.trim() !== raw || document.activeElement !== urlIn) return; // user kept typing → drop stale results
+    if (box.value.trim() !== raw || document.activeElement !== box) return; // user kept typing → drop stale results
     sugItems = sugItems.filter((x) => x.kind !== 'google').concat(
       list.filter((s) => s.toLowerCase() !== q).slice(0, 5).map((s) => ({ kind: 'google' as const, text: s, url: SEARCH + encodeURIComponent(s) })));
     emit();
@@ -274,7 +289,8 @@ export function hideSug() {
   emit();
 }
 
-export function urlKey(e: KeyboardEvent) {
+export function urlKey(e: KeyboardEvent<HTMLInputElement>) {
+  const box = e.currentTarget;
   if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && sugItems.length) {
     e.preventDefault();
     const n = sugItems.length;
@@ -282,10 +298,10 @@ export function urlKey(e: KeyboardEvent) {
     emit();
   } else if (e.key === 'Escape') {
     // Like Chrome: 1st Esc drops what was typed, 2nd Esc goes back to the page
-    const cur = active?.url || '';
+    const cur = box === urlIn ? active?.url || '' : '';
     hideSug();
-    if (urlIn.value !== cur) { urlIn.value = cur; urlIn.select(); } else focusPage();
-  } else if (e.key === 'Enter') go(sugSel >= 0 ? sugItems[sugSel].url : urlIn.value);
+    if (box.value !== cur) { box.value = cur; box.select(); } else focusPage();
+  } else if (e.key === 'Enter') go(sugSel >= 0 ? sugItems[sugSel].url : box.value);
 }
 
 // ---------- Zoom: remembered per host, like Chrome ----------
@@ -307,7 +323,7 @@ export function zoom(dir: number) {
 export function pip() { if (active?.ready) dock.pip(active.wcId!); }
 
 // ---------- Find in page ----------
-export function openFind() {
+function openFind() {
   if (!active) return;
   find.open = true;
   emit();
