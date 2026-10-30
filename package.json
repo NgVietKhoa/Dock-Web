@@ -1,24 +1,33 @@
 {
   "name": "dock-web",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "description": "Panel web luôn nằm trên cùng, dock vào cạnh màn hình",
-  "main": "main.js",
+  "main": "out/main/index.js",
   "scripts": {
-    "start": "electron .",
-    "dist": "electron-builder --win --publish never"
+    "start": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc",
+    "dist": "electron-vite build && electron-builder --win --publish never"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
     "electron": "^45.0.0",
-    "electron-builder": "^26.18.0"
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
   },
   "author": "Khoa",
   "build": {
     "appId": "com.khoa.dockweb",
     "productName": "Dock Web",
     "files": [
-      "main.js",
-      "preload.js",
-      "index.html"
+      "out/**"
     ],
     "directories": {
       "output": "dist"

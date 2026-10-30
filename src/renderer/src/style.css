@@ -1,0 +1,157 @@
+:root { color-scheme:light dark; --bg:#1e1f22; --bar:#2b2d31; --tool:#3a3c42; --tab:#383a40; --act:#4e5058; --fg:#e6e6e6; --mute:#9a9ca3; --acc:#5865f2;
+        --pop:#2b2d31; --hov:#34363b; --line:#3a3c42; --edge:#1a1b1e; --shadow:rgba(0,0,0,.45); }
+/* Light theme. ⋯ → Theo hệ thống / Sáng / Tối sets nativeTheme.themeSource in main → this media query follows it (like Chrome) */
+@media (prefers-color-scheme: light) {
+  :root { --bg:#f1f3f4; --bar:#e3e6ea; --tool:#ffffff; --tab:#d8dce1; --act:#ccd1d7; --fg:#1f1f1f; --mute:#5f6368;
+          --pop:#ffffff; --hov:#d9dde2; --line:#c4c8cd; --edge:#dadce0; --shadow:rgba(0,0,0,.18); }
+}
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:13px "Segoe UI", system-ui, sans-serif; overflow:hidden; }
+body { border:1px solid var(--line); }
+#root, #app { height:100%; }
+#app { display:flex; flex-direction:column; }
+
+button { display:inline-flex; align-items:center; justify-content:center; background:var(--tab); color:var(--fg); border:0; border-radius:6px; padding:3px 7px; cursor:pointer; font:inherit; line-height:18px; }
+button:hover { background:var(--act); }
+button.on { background:var(--acc); color:#fff; }
+[hidden] { display:none !important; }
+
+/* Icons: <svg class="ic"><use href="#i-…"></svg> from the sprite at the top of <body>; stroke follows the text color */
+.ic { width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+/* Row 1 (like Chrome): tabs + window buttons. Empty space = handle for dragging the window */
+#bar { display:flex; align-items:center; gap:4px; height:36px; padding:4px 6px 0; background:var(--bar); flex:none; -webkit-app-region:drag; user-select:none; }
+/* Only buttons/tabs are no-drag → gaps between tabs, after the + button… can all be grabbed */
+#bar button, .tab { -webkit-app-region:no-drag; }
+#grab, #add, .win { margin-bottom:4px; }
+#grab { display:flex; color:var(--mute); padding:2px 6px; cursor:move; }
+#bar button { background:transparent; }
+#bar button:hover { background:var(--tab); }
+#bar button.on { background:var(--acc); }
+#bar #close:hover { background:#da373c; color:#fff; }
+#tabs { display:flex; align-self:stretch; gap:2px; overflow-x:auto; flex:0 1 auto; min-width:0; scrollbar-width:none; }
+#tabs::-webkit-scrollbar { display:none; }
+/* container-type ignores the content when sizing → state the natural width (220px minus padding) or #tabs collapses */
+.tab { container-type:inline-size; contain-intrinsic-inline-size:204px; display:flex; align-items:center; gap:6px; flex:0 1 220px; min-width:32px; padding:0 8px; border-radius:8px 8px 0 0; cursor:pointer; white-space:nowrap; }
+.tab:hover { background:var(--hov); }
+.tab.on { background:var(--tool); }
+.tab .fav { flex:none; display:flex; width:16px; height:16px; color:var(--mute); }
+/* The title fades out at the end like Chrome instead of "…" */
+.tab span { flex:1; min-width:0; overflow:hidden; -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 18px), transparent); }
+.tab b { display:flex; color:var(--mute); padding:2px; border-radius:4px; }
+.tab b:hover { color:var(--fg); background:var(--act); }
+.tab b .ic { width:12px; height:12px; }
+.tab .snd { display:none; color:var(--mute); }
+.tab .snd:hover { color:var(--fg); }
+.tab .snd .ic { width:14px; height:14px; }
+.tab.audible .snd, .tab.muted .snd { display:flex; }
+/* Crowded tabs shrink in steps (sizes = tab width minus padding): the title shortens → inactive tabs drop × →
+   only the favicon is left (the active tab shows × instead). At 32px the bar starts scrolling */
+@container (max-width: 72px) { .tab:not(.on) b { display:none; } }
+@container (max-width: 40px) {
+  .tab span, .tab:is(.audible, .muted) .snd, .tab.on .fav { display:none; }
+  .tab .fav, .tab b { margin:0 auto; }
+}
+.win { display:flex; gap:2px; margin-left:auto; }
+
+/* Row 2: ← → ⟳ + address bar */
+#nav { display:flex; align-items:center; gap:2px; padding:4px 6px; background:var(--tool); flex:none; }
+#nav button { width:28px; height:28px; padding:0; border-radius:50%; background:transparent; }
+#nav button:hover { background:var(--act); }
+#nav button:disabled { opacity:.35; cursor:default; background:transparent; }
+.omni { display:flex; align-items:center; gap:2px; flex:1; min-width:0; height:30px; margin-left:4px; padding:0 3px 0 12px; background:var(--bg); border:1px solid transparent; border-radius:15px; }
+.omni:focus-within { border-color:var(--acc); }
+#url { flex:1; min-width:0; padding:0; background:transparent; color:var(--fg); border:0; outline:none; font:inherit; }
+#nav .omni button { width:24px; height:24px; }
+#nav #zoom { width:auto; padding:0 8px; border-radius:12px; color:var(--mute); font-size:12px; }
+#star.on { color:#f5c518; }
+#star.on .ic { fill:currentColor; }
+
+#views { position:relative; flex:1; border-top:1px solid var(--edge); }
+.wvs { position:absolute; inset:0; } /* webviews container (see views in browser.ts) */
+webview { position:absolute; inset:0; width:100%; height:100%; visibility:hidden; }
+webview.on { visibility:visible; }
+/* Home page on a blank tab (like Chrome's new tab page). Parts drop out as the window gets small
+   (container heights below = #home minus its 32px padding) */
+#home { position:absolute; inset:0; container-type:size; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px; padding:16px; overflow:hidden; user-select:none; }
+#home .clock { text-align:center; }
+#home .time { font-size:56px; font-weight:300; line-height:1; }
+#home .date { margin-top:8px; color:var(--mute); font-size:14px; }
+#home .hsearch { display:flex; align-items:center; gap:12px; flex:none; width:min(560px, 100%); height:46px; padding:0 18px; background:var(--tool); border:1px solid var(--line); border-radius:23px; box-shadow:0 2px 8px var(--shadow); color:var(--mute); font-size:14px; cursor:text; }
+#home .hsearch:hover { border-color:var(--act); }
+#home .hsearch .ic { width:18px; height:18px; }
+#home .sites { display:grid; gap:4px; max-width:100%; } /* columns set in Home.tsx */
+.site { position:relative; display:flex; flex-direction:column; align-items:center; gap:8px; padding:12px 4px 10px; border-radius:8px; cursor:pointer; }
+.site:hover { background:var(--hov); }
+.site .sico { display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:50%; background:var(--tab); color:var(--fg); font-size:20px; font-style:normal; }
+.site .sico img { width:24px; height:24px; }
+.site span { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.site b { position:absolute; top:4px; right:4px; display:none; padding:3px; border-radius:50%; color:var(--mute); }
+.site:hover b { display:flex; }
+.site b:hover { background:var(--act); color:var(--fg); }
+.site b .ic { width:12px; height:12px; }
+#home .hint { position:absolute; left:16px; right:16px; bottom:14px; color:var(--mute); font-size:11px; line-height:1.7; text-align:center; opacity:.75; }
+@container (max-height: 480px) { #home .clock { display:none; } }
+@container (max-height: 360px) { #home .hint { display:none; } #home .site:nth-child(n+5) { display:none; } }
+@container (max-height: 200px) { #home .sites { display:none; } }
+@container (max-width: 379px) { #home .hint { display:none; } }
+
+/* Find-in-page bar (Ctrl+F) */
+#find { position:absolute; top:6px; right:10px; z-index:5; display:none; align-items:center; gap:4px; padding:4px; background:var(--pop); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px var(--shadow); }
+#find.on { display:flex; }
+#find button .ic { width:14px; height:14px; }
+#findIn { width:160px; background:var(--bg); color:var(--fg); border:1px solid var(--tab); border-radius:4px; padding:2px 6px; outline:none; }
+#findIn:focus { border-color:var(--acc); }
+#findN { min-width:36px; color:var(--mute); font-size:12px; text-align:center; }
+
+#corner { position:fixed; right:0; bottom:0; width:16px; height:16px; z-index:20; cursor:nwse-resize;
+  background:linear-gradient(135deg, transparent 55%, var(--mute) 55%, var(--mute) 62%, transparent 62%, transparent 75%, var(--mute) 75%, var(--mute) 82%, transparent 82%); }
+#overlay, #shield { position:fixed; inset:0; z-index:30; display:none; -webkit-app-region:no-drag; }
+#overlay { background:rgba(88,101,242,.25); border:3px dashed var(--acc); align-items:center; justify-content:center; font-size:18px; }
+#overlay.on { display:flex; }
+#shield.on { display:block; cursor:nwse-resize; }
+
+/* Suggestions under the address bar: typed text, history, Google search suggestions */
+#sug { position:fixed; z-index:25; display:none; overflow-y:auto; padding:3px; background:var(--pop); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px var(--shadow); -webkit-app-region:no-drag; }
+#sug.on { display:block; }
+#sug div { display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius:4px; cursor:pointer; white-space:nowrap; }
+#sug div.sel, #sug div:hover { background:var(--act); }
+#sug i { flex:none; display:flex; justify-content:center; width:18px; color:var(--mute); }
+#sug i .ic { width:14px; height:14px; }
+#sug .ti { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+#sug .u { flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; color:var(--mute); }
+#sug .u:not(:empty) { min-width:30%; }
+#sug b { flex:none; display:flex; margin-left:auto; padding:2px; color:var(--mute); }
+#sug b:hover { color:var(--fg); }
+#sug b .ic { width:14px; height:14px; }
+
+/* Bookmarks bar (like Chrome) — shown only when there is at least 1 bookmark */
+#marks { display:none; align-items:center; gap:2px; padding:0 6px 4px; background:var(--tool); flex:none; overflow:hidden; -webkit-app-region:drag; user-select:none; }
+#marks.on { display:flex; }
+/* » at the end of the bar: bookmarks that don't fit (like Chrome) */
+#marksMore { flex:none; margin-left:auto; width:24px; height:24px; padding:0; border-radius:50%; background:transparent; color:var(--mute); -webkit-app-region:no-drag; }
+#marksMore:hover { background:var(--tab); color:var(--fg); }
+.mark { display:flex; align-items:center; gap:6px; max-width:170px; padding:3px 8px; border-radius:12px; cursor:pointer; white-space:nowrap; flex:none; -webkit-app-region:no-drag; }
+.mark:hover { background:var(--tab); }
+.mark i { flex:none; display:flex; align-items:center; justify-content:center; width:16px; height:16px; color:var(--mute); }
+.mark i .ic { width:14px; height:14px; }
+.mark span { overflow:hidden; text-overflow:ellipsis; outline:none; }
+.mark span[contenteditable] { background:var(--bg); padding:0 4px; border-radius:3px; text-overflow:clip; }
+
+/* Shared popup menu: ⋯, tab right-click, bookmark right-click */
+#menu { position:fixed; z-index:26; display:none; min-width:170px; max-height:calc(100vh - 8px); overflow-y:auto; padding:3px; background:var(--pop); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px var(--shadow); -webkit-app-region:no-drag; user-select:none; }
+#menu.on { display:block; }
+#menu .mi { display:flex; align-items:center; gap:8px; padding:4px 10px 4px 6px; border-radius:4px; cursor:pointer; white-space:nowrap; }
+#menu .mi:hover { background:var(--act); }
+#menu .mi i { display:flex; justify-content:center; width:18px; color:var(--mute); }
+#menu .mi .chk { width:14px; height:14px; color:var(--acc); stroke-width:3; }
+#menu .mi span { max-width:320px; overflow:hidden; text-overflow:ellipsis; }
+#menu .mi small { margin-left:auto; padding-left:16px; color:var(--mute); font-size:11px; }
+#menu hr { margin:3px 4px; border:0; border-top:1px solid var(--tab); }
+#menu label { display:flex; align-items:center; gap:8px; padding:4px 10px 4px 32px; white-space:nowrap; }
+#menu input[type=range] { width:90px; }
+
+#ghost { position:fixed; left:8px; bottom:8px; z-index:40; display:none; padding:4px 10px; border-radius:6px; background:rgba(0,0,0,.75); color:#fff; font-size:12px; pointer-events:none; }
+body.ghost #ghost { display:flex; align-items:center; gap:6px; }
+#ghost .ic { width:14px; height:14px; }
+body.ghost #corner { display:none; }

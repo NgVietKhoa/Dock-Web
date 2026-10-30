@@ -59,22 +59,24 @@ If `Ctrl+Shift+Space` or `Ctrl+Alt+Space` is already taken by another app (Unike
 
 ## Running from source
 
-Requires [Node.js](https://nodejs.org/) 20 or later.
+Requires [Node.js](https://nodejs.org/) 20.19 or later.
 
 ```bash
 git clone https://github.com/NgVietKhoa/Dock-Web.git
 cd Dock-Web
 npm install
-npm start          # run in development
+npm start          # run in development (UI hot-reloads on save)
+npm run typecheck  # TypeScript check
 npm run dist       # build the installer into dist/
 ```
 
-The source consists of 3 main files, built with [Electron](https://www.electronjs.org/):
+Built with [Electron](https://www.electronjs.org/), [electron-vite](https://electron-vite.org/), TypeScript and React:
 
-| File | Role |
+| Folder | Role |
 |---|---|
-| `main.js` | Window, system tray, global shortcuts, Google sign-in handling |
-| `preload.js` | Secure bridge between the UI and `main.js` |
-| `index.html` | The entire UI: tabs, address bar, bookmarks, menus |
+| `src/main/` | Window, system tray, global shortcuts, right-click menu, video pinning, Google sign-in handling, auto-update, saved data (`store.json`) |
+| `src/preload/` | Secure bridge between the UI and the main process |
+| `src/renderer/` | The UI: `browser.ts` holds the tabs/history/bookmarks state and actions, `components/` renders it |
+| `src/shared/` | Types shared by all three (IPC messages, saved data) |
 
 Releasing a new version: bump `version` in `package.json`, run `npm run dist`, then upload `dist/Dock-Web-Setup-<version>.exe`, `dist/Dock-Web-Setup-<version>.exe.blockmap` and `dist/latest.yml` to a new GitHub Release (installed apps read `latest.yml` to find updates).

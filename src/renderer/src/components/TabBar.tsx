@@ -1,0 +1,80 @@
+import { useLayoutEffect, useRef, type MouseEvent } from 'react';
+import type { Theme } from '../../../shared/ipc';
+import { active, clearHistory, close, mute, newTab, popMenu, save, select, sortable, state, tabs, toggleMenu, update, type MenuItem, type Tab } from '../browser';
+import { Fav, Icon } from './Icon';
+
+// Row 1 (like Chrome): tabs + window buttons. Empty space = handle for dragging the window
+export function TabBar() {
+  return (
+    <div id="bar">
+      <span id="grab" title="Nắm chỗ này (hoặc chỗ trống trên thanh) để kéo cửa sổ"><Icon name="grip" /></span>
+      <div id="tabs">{tabs.map((t) => <TabItem key={t.id} t={t} />)}</div>
+      <button id="add" title="Tab mới (Ctrl+T)" onClick={newTab}><Icon name="plus" /></button>
+      <div className="win">
+        <button id="update" className="on" hidden={!update} title={`Đã tải bản ${update} · bấm để khởi động lại và cập nhật`} onClick={() => dock.installUpdate()}>Cập nhật</button>
+        <button id="pin" className={state.pinned ? 'on' : ''} title="Luôn nằm trên cùng" onClick={() => dock.pin()}><Icon name="pin" /></button>
+        <button id="more" className="mbtn" title="Thêm" onClick={(e) => toggleMenu(e.currentTarget, moreMenu)}><Icon name="more" /></button>
+        <button id="min" title="Thu nhỏ" onClick={() => dock.minimize()}><Icon name="minimize" /></button>
+        <button id="max" title={(state.maximized ? 'Thu lại' : 'Phóng to') + ' (hoặc nhấp đúp thanh)'} onClick={() => dock.maximize()}>
+          <Icon name={state.maximized ? 'restore' : 'maximize'} />
+        </button>
+        <button id="close" title="Ẩn xuống khay (Ctrl+Shift+Space để mở lại)" onClick={() => dock.hide()}><Icon name="x" /></button>
+      </div>
+    </div>
+  );
+}
+
+function TabItem({ t }: { t: Tab }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const on = t === active;
+  // block defaults to 'start' → can shift the whole page a few px even with body overflow:hidden
+  useLayoutEffect(() => { if (on) ref.current!.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }, [on]);
+  const title = t.title || (t.url ? t.url.replace(/^https?:\/\//, '') : 'Tab mới');
+  return (
+    <div
+      ref={ref}
+      className={'tab' + (on ? ' on' : '') + (t.audible ? ' audible' : '') + (t.muted ? ' muted' : '')}
+      title={t.title || ''}
+      onClick={() => select(t)}
+      onAuxClick={(e) => { if (e.button === 1) close(t); }}
+      onContextMenu={(e) => { e.preventDefault(); tabMenu(t, e); }}
+      // Only reorder the tab buttons; webviews stay in place (moving a webview in the DOM reloads the page)
+      {...sortable('tabs', t, () => tabs, save)}
+    >
+      <Fav className="fav" src={t.icon} />
+      <span>{title}</span>
+      <i className="snd" title={t.muted ? 'Bật tiếng tab' : 'Tắt tiếng tab'} onClick={(e) => { e.stopPropagation(); mute(t); }}>
+        <Icon name={t.muted ? 'mute' : 'volume'} />
+      </i>
+      <b title="Đóng (Ctrl+W)" onClick={(e) => { e.stopPropagation(); close(t); }}><Icon name="x" /></b>
+    </div>
+  );
+}
+
+function tabMenu(t: Tab, e: MouseEvent) {
+  popMenu([
+    { label: 'Tải lại', icon: 'reload', hint: 'F5', run: () => t.ready && t.wv.reload() },
+    { label: t.muted ? 'Bật tiếng tab' : 'Tắt tiếng tab', icon: t.muted ? 'volume' : 'mute', run: () => mute(t) },
+    '-',
+    { label: 'Đóng tab', icon: 'x', hint: 'Ctrl+W', run: () => close(t) },
+  ], e.clientX, e.clientY);
+}
+
+function moreMenu(): MenuItem[] {
+  const theme = (v: Theme, label: string, icon: string) => ({ label, icon, on: (state.theme ?? 'system') === v, run: () => dock.theme(v) });
+  return [
+    theme('system', 'Giao diện theo hệ thống', 'monitor'),
+    theme('light', 'Giao diện sáng', 'sun'),
+    theme('dark', 'Giao diện tối', 'moon'),
+    '-',
+    <label>
+      Độ trong suốt{' '}
+      <input type="range" min="0.3" max="1" step="0.05" defaultValue={state.opacity ?? 1}
+        onInput={(e) => { state.opacity = parseFloat(e.currentTarget.value); dock.opacity(state.opacity); }} />
+    </label>,
+    { label: 'Xuyên chuột', icon: 'ghost', on: state.ghost, hint: 'Ctrl+Alt+Space', run: () => dock.ghost() },
+    '-',
+    { label: 'Xoá lịch sử duyệt web', icon: 'trash', run: clearHistory },
+    { label: 'Thoát hẳn', icon: 'power', run: () => dock.quit() },
+  ];
+}
