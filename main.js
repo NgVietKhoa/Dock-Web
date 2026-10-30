@@ -1,4 +1,5 @@
-const { app, BrowserWindow, screen, globalShortcut, ipcMain, Tray, Menu, nativeImage, nativeTheme, net, session } = require('electron');
+const { app, BrowserWindow, screen, globalShortcut, ipcMain, Tray, Menu, nativeImage, nativeTheme, net, session, webContents, clipboard } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 
@@ -70,6 +71,7 @@ function createWindow() {
   win.loadFile('index.html');
   win.webContents.on('did-finish-load', sendState);
   hookKeys(win.webContents);
+  contextMenu(win.webContents); // address bar, find box, bookmark rename (tab/bookmark menus preventDefault → never reach here)
 
   const remember = () => { if (!win.isMinimized()) { cfg.bounds = win.getBounds(); saveCfg(); } };
   win.on('move', remember);
@@ -174,6 +176,32 @@ function hookKeys(contents) {
   });
 }
 
+// Right-click menu (Electron has none): only the items that fit the spot clicked, like Chrome
+function contextMenu(contents) {
+  contents.on('context-menu', (_e, p) => {
+    const groups = [];
+    if (p.linkURL) groups.push([
+      { label: 'Mở link trong tab mới', click: () => win.webContents.send('open-tab', p.linkURL) },
+      { label: 'Sao chép địa chỉ link', click: () => clipboard.writeText(p.linkURL) },
+    ]);
+    if (p.mediaType === 'image') groups.push([
+      { label: 'Mở ảnh trong tab mới', click: () => win.webContents.send('open-tab', p.srcURL) },
+      { label: 'Lưu ảnh…', click: () => contents.downloadURL(p.srcURL) },
+      { label: 'Sao chép ảnh', click: () => contents.copyImageAt(p.x, p.y) },
+      { label: 'Sao chép địa chỉ ảnh', click: () => clipboard.writeText(p.srcURL) },
+    ]);
+    if (p.isEditable) groups.push([
+      { label: 'Cắt', accelerator: 'Ctrl+X', enabled: p.editFlags.canCut, click: () => contents.cut() },
+      { label: 'Sao chép', accelerator: 'Ctrl+C', enabled: p.editFlags.canCopy, click: () => contents.copy() },
+      { label: 'Dán', accelerator: 'Ctrl+V', enabled: p.editFlags.canPaste, click: () => contents.paste() },
+      { label: 'Chọn tất cả', accelerator: 'Ctrl+A', click: () => contents.selectAll() },
+    ]);
+    else if (p.selectionText.trim()) groups.push([{ label: 'Sao chép', accelerator: 'Ctrl+C', click: () => contents.copy() }]);
+    if (!groups.length) return;
+    Menu.buildFromTemplate(groups.flatMap((g, i) => (i ? [{ type: 'separator' }, ...g] : g))).popup({ window: win });
+  });
+}
+
 // Corner-drag resize: main reads the real cursor position → no drift at Windows 125%/150% scaling
 ipcMain.on('resize-start', () => {
   const start = screen.getCursorScreenPoint();
@@ -201,12 +229,39 @@ ipcMain.on('maximize', () => (win.isMaximized() ? win.unmaximize() : win.maximiz
 ipcMain.on('hide', hide);
 ipcMain.on('quit', () => app.quit());
 
+// Auto-update from GitHub Releases (latest.yml uploaded next to the installer): downloads in the background, then the
+// "Cập nhật" button shows; it also installs on quit. Checked again every 6h because the app lives in the tray for days
+function checkUpdate() {
+  if (!app.isPackaged) return;
+  autoUpdater.on('update-downloaded', (i) => win?.webContents.send('update', i.version));
+  const check = () => autoUpdater.checkForUpdates().catch(() => {});
+  check();
+  setInterval(check, 6 * 3600e3);
+}
+ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
+
 // Google search suggestions for the address bar (fetched from main because the file:// page is blocked by CORS)
 ipcMain.handle('suggest', async (_e, q) => {
   try {
     const r = await net.fetch('https://suggestqueries.google.com/complete/search?client=chrome&hl=vi&ie=utf-8&oe=utf-8&q=' + encodeURIComponent(q));
     return (await r.json())[1] || [];
   } catch { return []; }
+});
+
+// Pin video: Chromium's Picture-in-Picture window (floats in a screen corner, draggable). Clicking again unpins.
+// Runs in every frame because movie sites often embed the player in an iframe; userGesture = true or Chromium refuses PiP
+const PIP = `(async () => {
+  if (document.pictureInPictureElement) { await document.exitPictureInPicture(); return true; }
+  const v = [...document.querySelectorAll('video')].filter(v => v.readyState && !v.disablePictureInPicture)
+    .sort((a, b) => b.offsetWidth * b.offsetHeight - a.offsetWidth * a.offsetHeight)[0];
+  if (!v) return false;
+  await v.requestPictureInPicture();
+  return true;
+})()`;
+ipcMain.handle('pip', async (_e, id) => {
+  for (const f of webContents.fromId(id)?.mainFrame.framesInSubtree ?? []) {
+    try { if (await f.executeJavaScript(PIP, true)) return; } catch {}
+  }
 });
 
 // Google blocks sign-in inside embedded browsers ("This browser or app may not be secure").
@@ -242,6 +297,7 @@ app.on('web-contents-created', (_e, contents) => {
   googleLoginUA(contents); // both tabs and sign-in popup windows
   if (contents.getType() !== 'webview') return;
   hookKeys(contents);
+  contextMenu(contents);
   // Ctrl + mouse wheel in the page → renderer zooms per domain
   contents.on('zoom-changed', (_e, dir) => win?.webContents.send('key', dir === 'in' ? 'zoomIn' : 'zoomOut'));
   contents.on('audio-state-changed', (e) => win?.webContents.send('audio', contents.id, e.audible));
@@ -275,6 +331,7 @@ app.whenReady().then(() => {
   tray.on('click', show);
   tray.setContextMenu(trayMenu());
   createWindow();
+  checkUpdate();
   // Global shortcuts may already be taken by other apps (Unikey, screenshot tools…) → notify instead of failing silently
   const taken = [['Ctrl+Shift+Space', toggle], ['Ctrl+Alt+Space', toggleGhost]]
     .filter(([k, fn]) => !globalShortcut.register(k.replace('Ctrl', 'CommandOrControl'), fn))

@@ -168,6 +168,7 @@
   <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+  <symbol id="i-pip" viewBox="0 0 24 24"><path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/><rect x="12" y="13" width="10" height="7" rx="2"/></symbol>
   <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.77.04"/></symbol>
 </svg>
 <div id="app">
@@ -176,6 +177,7 @@
     <div id="tabs"></div>
     <button id="add" title="Tab mới (Ctrl+T)"><svg class="ic"><use href="#i-plus"/></svg></button>
     <div class="win">
+      <button id="update" class="on" hidden>Cập nhật</button>
       <button id="pin" title="Luôn nằm trên cùng"><svg class="ic"><use href="#i-pin"/></svg></button>
       <button id="more" class="mbtn" title="Thêm"><svg class="ic"><use href="#i-more"/></svg></button>
       <button id="min" title="Thu nhỏ"><svg class="ic"><use href="#i-minimize"/></svg></button>
@@ -190,6 +192,7 @@
     <div class="omni">
       <input id="url" placeholder="Tìm trên Google hoặc nhập URL…" spellcheck="false">
       <button id="zoom" hidden title="Đưa về 100% (Ctrl+0)"></button>
+      <button id="pip" hidden title="Ghim video ra góc màn hình (bấm lần nữa để bỏ ghim)"><svg class="ic"><use href="#i-pip"/></svg></button>
       <button id="star" title="Lưu vào thanh dấu trang (Ctrl+D)"><svg class="ic"><use href="#i-star"/></svg></button>
     </div>
   </div>
@@ -216,7 +219,7 @@
 const $ = (s) => document.querySelector(s);
 const icon = (name, cls = '') => `<svg class="ic ${cls}"><use href="#i-${name}"/></svg>`;
 const tabsEl = $('#tabs'), views = $('#views'), urlIn = $('#url'), overlay = $('#overlay'), shield = $('#shield');
-const sug = $('#sug'), menu = $('#menu'), marksEl = $('#marks'), marksMore = $('#marksMore'), star = $('#star'), zoomBtn = $('#zoom');
+const sug = $('#sug'), menu = $('#menu'), marksEl = $('#marks'), marksMore = $('#marksMore'), star = $('#star'), zoomBtn = $('#zoom'), pipBtn = $('#pip');
 const findEl = $('#find'), findIn = $('#findIn'), findN = $('#findN');
 
 // Batch localStorage writes to at most once per 0.5s: sites like TikTok/YouTube change the URL constantly while scrolling,
@@ -328,6 +331,9 @@ function openTab(raw, focus = true, lazy = false) {
     if (!sameHost) { applyZoom(t); t.icon = ''; updFav(t); } // zoom is remembered per host → only reapply when the host changes; the new site sends its own favicon
     visit(e.url); save();
   };
+  // Pin video button only shows on pages that have played media (a new page starts without it)
+  wv.addEventListener('media-started-playing', () => { t.media = true; if (t === active) updPip(); });
+  wv.addEventListener('did-navigate', () => { t.media = false; if (t === active) updPip(); });
   wv.addEventListener('did-navigate', nav);
   wv.addEventListener('did-navigate-in-page', (e) => e.isMainFrame && nav(e));
   tabsEl.appendChild(el);
@@ -377,6 +383,7 @@ function select(t) {
   updStar();
   updZoom();
   updNav();
+  updPip();
   focusPage();
   save();
 }
@@ -395,7 +402,7 @@ function close(t) {
   const i = tabs.indexOf(t);
   t.el.remove(); t.wv.remove(); tabs.splice(i, 1);
   if (active === t) { active = null; if (tabs.length) select(tabs[Math.max(0, i - 1)]); }
-  if (!tabs.length) { updEmpty(); urlIn.value = ''; updStar(); updZoom(); updNav(); }
+  if (!tabs.length) { updEmpty(); urlIn.value = ''; updStar(); updZoom(); updNav(); updPip(); }
   save();
 }
 
@@ -555,6 +562,9 @@ function updZoom() {
   zoomBtn.textContent = Math.round(z * 100) + '%';
 }
 zoomBtn.onclick = () => zoom(0);
+
+function updPip() { pipBtn.hidden = !active?.media; }
+pipBtn.onclick = () => active?.ready && dock.pip(active.wcId);
 
 // ---------- Find in page ----------
 function openFind() {
@@ -754,6 +764,11 @@ dock.onState((s) => {
   document.body.classList.toggle('ghost', s.ghost);
 });
 dock.onOpenTab((url) => openTab(url));
+dock.onUpdate((v) => {
+  $('#update').hidden = false;
+  $('#update').title = `Đã tải bản ${v} · bấm để khởi động lại và cập nhật`;
+});
+$('#update').onclick = () => dock.installUpdate();
 dock.onAudio((id, audible) => {
   const t = tabs.find(x => x.wcId === id);
   if (t) { t.audible = audible; updSound(t); }

@@ -12,7 +12,7 @@ Download **`Dock-Web-Setup-x.y.z.exe`** from the [Releases](https://github.com/N
 
 > The installer is not code-signed, so Windows may show *"Windows protected your PC"*. Click **More info** → **Run anyway** to continue.
 
-To update, just install the new version over the old one; tabs, bookmarks, history and signed-in accounts are kept.
+Dock Web updates itself: when a new version is out it downloads in the background and a **Cập nhật** button appears on the tab bar — click it to restart into the new version (or it installs the next time you quit). Tabs, bookmarks, history and signed-in accounts are kept.
 
 ## Features
 
@@ -28,6 +28,7 @@ To update, just install the new version over the old one; tabs, bookmarks, histo
 - Multiple tabs: drag to reorder, middle-click to close, `Ctrl+Shift+T` to reopen the last closed tab. Tabs are restored when the app reopens (only the active tab is loaded, to keep things light).
 - The address bar accepts both URLs and search terms, with suggestions from history and Google search suggestions.
 - Bookmarks bar: the star in the address bar saves a page, right-click to rename or delete.
+- **Pin video:** on pages playing a video, the button in the address bar pops the video out into a small window in the screen corner that stays on top and can be dragged anywhere (like Cốc Cốc). Click again to unpin.
 - Per-site zoom (`Ctrl + mouse wheel`), find in page (`Ctrl+F`), mute individual tabs (speaker icon on the tab).
 - Stays signed in between launches. "Sign in with Google/Facebook" popups open in their own window.
 - Drag a link, file or URL from another browser into the window to open it in a new tab.
@@ -76,4 +77,4 @@ The source consists of 3 main files, built with [Electron](https://www.electronj
 | `preload.js` | Secure bridge between the UI and `main.js` |
 | `index.html` | The entire UI: tabs, address bar, bookmarks, menus |
 
-Releasing a new version: bump `version` in `package.json`, run `npm run dist`, then upload `dist/Dock-Web-Setup-<version>.exe` to a new GitHub Release.
+Releasing a new version: bump `version` in `package.json`, run `npm run dist`, then upload `dist/Dock-Web-Setup-<version>.exe`, `dist/Dock-Web-Setup-<version>.exe.blockmap` and `dist/latest.yml` to a new GitHub Release (installed apps read `latest.yml` to find updates).
