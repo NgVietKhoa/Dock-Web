@@ -1,5 +1,6 @@
 const { app, BrowserWindow, screen, globalShortcut, ipcMain, Tray, Menu, nativeImage, nativeTheme, net, session, webContents, clipboard } = require('electron');
 const { autoUpdater } = require('electron-updater');
+const koffi = require('koffi');
 const path = require('path');
 const fs = require('fs');
 
@@ -120,7 +121,11 @@ function togglePin() {
 }
 
 // Click-through: the window fades (at most 60% opacity) and every click falls through to the app underneath
-const applyOpacity = () => win.setOpacity(ghost ? Math.min(cfg.opacity, 0.6) : cfg.opacity);
+const opacity = () => (ghost ? Math.min(cfg.opacity, 0.6) : cfg.opacity);
+function applyOpacity() {
+  win.setOpacity(opacity());
+  fadePip();
+}
 function toggleGhost() {
   ghost = !ghost;
   win.setIgnoreMouseEvents(ghost);
@@ -260,9 +265,34 @@ const PIP = `(async () => {
 })()`;
 ipcMain.handle('pip', async (_e, id) => {
   for (const f of webContents.fromId(id)?.mainFrame.framesInSubtree ?? []) {
-    try { if (await f.executeJavaScript(PIP, true)) return; } catch {}
+    try { if (await f.executeJavaScript(PIP, true)) return fadePip(); } catch {}
   }
 });
+
+// The PiP window is Chromium's own, not a BrowserWindow → Electron can't fade it; set its opacity through the Win32 API
+const user32 = koffi.load('user32.dll');
+const EnumWindowsProc = koffi.proto('bool __stdcall EnumWindowsProc(void *hwnd, intptr_t lp)');
+const EnumWindows = user32.func('bool __stdcall EnumWindows(EnumWindowsProc *cb, intptr_t lp)');
+const GetWindowThreadProcessId = user32.func('uint32 __stdcall GetWindowThreadProcessId(void *hwnd, _Out_ uint32 *pid)');
+const IsWindowVisible = user32.func('bool __stdcall IsWindowVisible(void *hwnd)');
+const GetWindowLongPtrW = user32.func('intptr_t __stdcall GetWindowLongPtrW(void *hwnd, int index)');
+const SetWindowLongPtrW = user32.func('intptr_t __stdcall SetWindowLongPtrW(void *hwnd, int index, intptr_t value)');
+const SetLayeredWindowAttributes = user32.func('bool __stdcall SetLayeredWindowAttributes(void *hwnd, uint32 key, uint8 alpha, uint32 flags)');
+const GWL_EXSTYLE = -20, WS_EX_LAYERED = 0x80000, LWA_ALPHA = 2;
+
+// Visible windows of this process that aren't BrowserWindows = the PiP window (title is localized, so not matched by name)
+function fadePip() {
+  const ours = BrowserWindow.getAllWindows().map((w) => w.getNativeWindowHandle().readBigUInt64LE());
+  EnumWindows((h) => {
+    const pid = [0];
+    GetWindowThreadProcessId(h, pid);
+    if (pid[0] === process.pid && IsWindowVisible(h) && !ours.includes(koffi.address(h))) {
+      SetWindowLongPtrW(h, GWL_EXSTYLE, GetWindowLongPtrW(h, GWL_EXSTYLE) | WS_EX_LAYERED);
+      SetLayeredWindowAttributes(h, 0, Math.round(opacity() * 255), LWA_ALPHA);
+    }
+    return true;
+  }, 0);
+}
 
 // Google blocks sign-in inside embedded browsers ("This browser or app may not be secure").
 // Same trick as Ferdium/Rambox: identify as Firefox on the Google sign-in page only

@@ -1,6 +1,6 @@
 {
   "name": "dock-web",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Panel web luôn nằm trên cùng, dock vào cạnh màn hình",
   "main": "main.js",
   "scripts": {
@@ -40,6 +40,7 @@
     "url": "https://github.com/NgVietKhoa/Dock-Web.git"
   },
   "dependencies": {
-    "electron-updater": "^6.8.11"
+    "electron-updater": "^6.8.11",
+    "koffi": "^3.3.5"
   }
 }
