@@ -18,11 +18,12 @@ Dock Web updates itself: when a new version is out it downloads in the backgroun
 
 **Floating window**
 - Always on top, even over games and fullscreen apps (toggle with the pin button).
-- Drag an empty spot on the tab bar to move the window; drag an edge or corner to resize. Position and size are remembered.
+- Drag an empty spot on the tab bar to move the window; drag an edge or corner to resize. Dropped near a screen edge, it snaps to that edge. Position and size are remembered.
 - Minimize / maximize buttons next to the close button (double-clicking the tab bar also maximizes); adjust opacity in the ⋯ menu.
 - Light / dark theme, or follow Windows (⋯ menu) — websites that support dark mode follow it too, like Chrome.
 - **Click-through:** the window fades and every click passes to the app underneath — handy for watching a video while working.
 - The close button only hides the window to the system tray; quit for real via the ⋯ menu or by right-clicking the tray icon.
+- **Start with Windows** (⋯ menu or tray icon): starts in the tray, ready for the hide/show shortcut.
 
 **Browses like Chrome**
 - Multiple tabs: drag to reorder, middle-click to close, `Ctrl+Shift+T` to reopen the last closed tab. Tabs are restored when the app reopens (only the active tab is loaded, to keep things light).
@@ -32,6 +33,11 @@ Dock Web updates itself: when a new version is out it downloads in the backgroun
 - Per-site zoom (`Ctrl + mouse wheel`), find in page (`Ctrl+F`), mute individual tabs (speaker icon on the tab).
 - Stays signed in between launches. "Sign in with Google/Facebook" popups open in their own window.
 - Drag a link, file or URL from another browser into the window to open it in a new tab.
+- **Ad blocking** (⋯ menu, on by default): blocks ads and trackers with EasyList-style lists, refreshed weekly. YouTube changes its ads often, so some may still get through.
+- **Site permissions:** camera, microphone, location, notifications and clipboard reading ask first, like Chrome; the answer is remembered per site.
+- **Downloads** go straight into your Downloads folder; the ⬇ button in the address bar shows progress and opens finished files (progress also shows on the taskbar).
+- A page that fails to load or crashes shows a message with a **Thử lại** button; while a page loads, ⟳ becomes ✕ to stop it.
+- ⋯ → *Xoá cookie và dữ liệu trang web* signs out of every site and forgets site permissions.
 
 ## Keyboard shortcuts
 
@@ -48,13 +54,15 @@ Dock Web updates itself: when a new version is out it downloads in the backgroun
 | `Ctrl+D` | Add / remove bookmark |
 | `Ctrl+F` | Find in page |
 | `Ctrl +` / `Ctrl -` / `Ctrl+0` | Zoom in / zoom out / reset to 100% |
+| `Ctrl+P` | Print the page |
+| `F12`, `Ctrl+Shift+I` | Developer tools for the page |
 
-If `Ctrl+Shift+Space` or `Ctrl+Alt+Space` is already taken by another app (Unikey, screenshot tools…), Dock Web shows a notice in the system tray on launch; use the tray icon instead.
+If `Ctrl+Shift+Space` or `Ctrl+Alt+Space` is already taken by another app (Unikey, screenshot tools…), Dock Web shows a notice in the system tray on launch. Pick another combo in the ⋯ menu (click the box, then press the keys; it must include `Ctrl` or `Alt`).
 
 ## Notes
 
 - **Google sign-in:** Google sometimes blocks sign-in inside apps that embed a browser ("This browser or app may not be secure"). Dock Web works around this in most cases; if it still fails, try again in a few minutes or turn off your VPN.
-- **Data** (tabs, bookmarks, history, login cookies) lives in `%APPDATA%\dock-web`. Delete this folder to reset the app.
+- **Data** (tabs, bookmarks, history, login cookies, site permissions) lives in `%APPDATA%\dock-web`. Delete this folder to reset the app.
 - While you type in the address bar, the text is sent to Google to fetch search suggestions (same as Chrome).
 
 ## Running from source
@@ -74,7 +82,7 @@ Built with [Electron](https://www.electronjs.org/), [electron-vite](https://elec
 
 | Folder | Role |
 |---|---|
-| `src/main/` | Window, system tray, global shortcuts, right-click menu, video pinning, Google sign-in handling, auto-update, saved data (`store.json`) |
+| `src/main/` | Window, system tray, global shortcuts, right-click menu, video pinning, Google sign-in handling, site permissions, downloads, ad blocking, auto-update, saved data (`store.json`) |
 | `src/preload/` | Secure bridge between the UI and the main process |
 | `src/renderer/` | The UI: `browser.ts` holds the tabs/history/bookmarks state and actions, `components/` renders it |
 | `src/shared/` | Types shared by all three (IPC messages, saved data) |
