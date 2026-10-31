@@ -42,7 +42,7 @@ function TabItem({ t }: { t: Tab }) {
       // Only reorder the tab buttons; webviews stay in place (moving a webview in the DOM reloads the page)
       {...sortable('tabs', t, () => tabs, save)}
     >
-      <Fav className="fav" src={t.icon} />
+      {t.loading ? <i className="fav spin" /> : <Fav className="fav" src={t.icon} />}
       <span>{title}</span>
       <i className="snd" title={t.muted ? 'Bật tiếng tab' : 'Tắt tiếng tab'} onClick={(e) => { e.stopPropagation(); mute(t); }}>
         <Icon name={t.muted ? 'mute' : 'volume'} />

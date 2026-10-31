@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
-import { active, moving, openTab, restore, useBrowser, views } from './browser';
+import { active, moving, openTab, reload, restore, useBrowser, views } from './browser';
 import { Bookmarks } from './components/Bookmarks';
 import { FindBar } from './components/FindBar';
 import { Home } from './components/Home';
@@ -7,6 +7,7 @@ import { Icon } from './components/Icon';
 import { Menu } from './components/Menu';
 import { NavBar, Suggestions } from './components/NavBar';
 import { TabBar } from './components/TabBar';
+import { pretty } from './url';
 
 export function App() {
   useBrowser();
@@ -50,6 +51,14 @@ export function App() {
         <div id="views" ref={(el) => { if (el && !views.isConnected) el.prepend(views); }}>
           {/* No tabs, or the active tab is a blank "New tab" */}
           {!active?.url && <Home />}
+          {active?.error && (
+            <div id="error">
+              <Icon name="globe" />
+              <b>{active.error}</b>
+              <span>{pretty(active.url)}</span>
+              <button className="on" onClick={reload}>Thử lại</button>
+            </div>
+          )}
           <FindBar />
         </div>
       </div>

@@ -36,6 +36,8 @@ button.on { background:var(--acc); color:#fff; }
 .tab:hover { background:var(--hov); }
 .tab.on { background:var(--tool); }
 .tab .fav { flex:none; display:flex; width:16px; height:16px; color:var(--mute); }
+.tab .spin { border:2px solid var(--act); border-top-color:var(--acc); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
 /* The title fades out at the end like Chrome instead of "…" */
 .tab span { flex:1; min-width:0; overflow:hidden; -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 18px), transparent); }
 .tab b { display:flex; color:var(--mute); padding:2px; border-radius:4px; }
@@ -105,6 +107,13 @@ webview.on { visibility:visible; }
 @container (max-height: 360px) { #home .hint { display:none; } #home .site:nth-child(n+5) { display:none; } }
 @container (max-height: 200px) { #home .sites { display:none; } }
 @container (max-width: 379px) { #home .hint { display:none; } }
+
+/* The page couldn't load or crashed: covers the blank page */
+#error { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px; background:var(--bg); text-align:center; }
+#error > .ic { width:40px; height:40px; color:var(--mute); stroke-width:1.5; }
+#error b { font-size:16px; }
+#error span { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--mute); }
+#error button { margin-top:6px; padding:6px 16px; }
 
 /* Find-in-page bar (Ctrl+F) */
 #find { position:absolute; top:6px; right:10px; z-index:5; display:none; align-items:center; gap:4px; padding:4px; background:var(--pop); border:1px solid var(--tab); border-radius:6px; box-shadow:0 6px 18px var(--shadow); }

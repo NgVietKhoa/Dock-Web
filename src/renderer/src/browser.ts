@@ -33,6 +33,8 @@ export interface Tab {
   media?: boolean;
   audible?: boolean;
   muted?: boolean;
+  loading?: boolean;
+  error?: string; // the page couldn't load or crashed → shown instead of the (blank) page
 }
 export interface SugItem { kind: 'search' | 'url' | 'hist' | 'google'; text?: string; url: string; h?: HistoryEntry }
 // '-' = separator · ReactElement = custom row · fav = favicon URL (instead of icon) · aux = middle-click
@@ -178,6 +180,20 @@ export function openTab(raw?: string, focus = true, lazy = false) {
   // Pin video button only shows on pages that have played media (a new page starts without it)
   wv.addEventListener('media-started-playing', () => { t.media = true; emit(); });
   wv.addEventListener('did-navigate', (e) => { t.media = false; nav(e); });
+  wv.addEventListener('did-start-loading', () => { t.loading = true; t.error = ''; emit(); });
+  wv.addEventListener('did-stop-loading', () => { t.loading = false; emit(); });
+  // -3 = aborted (stopped, replaced by another navigation, or turned into a download) → not an error
+  wv.addEventListener('did-fail-load', (e) => {
+    if (!e.isMainFrame || e.errorCode === -3) return;
+    t.error = LOAD_ERRORS[e.errorDescription] ?? `Không mở được trang (${e.errorDescription})`;
+    t.url = e.validatedURL; // like Chrome: the address bar keeps the failed URL and ⟳ retries it
+    if (t === active && document.activeElement !== urlIn) urlIn.value = t.url;
+    save();
+    emit();
+  });
+  wv.addEventListener('render-process-gone', (e) => {
+    if (e.details.reason !== 'clean-exit') { t.error = 'Trang bị lỗi và đã dừng'; t.loading = false; emit(); }
+  });
   wv.addEventListener('did-navigate-in-page', (e) => e.isMainFrame && nav(e));
   views.appendChild(wv);
   tabs.push(t);
@@ -185,6 +201,13 @@ export function openTab(raw?: string, focus = true, lazy = false) {
   else { save(); emit(); }
   return t;
 }
+
+const LOAD_ERRORS: Record<string, string> = {
+  ERR_INTERNET_DISCONNECTED: 'Không có kết nối Internet',
+  ERR_NAME_NOT_RESOLVED: 'Không tìm thấy địa chỉ trang',
+  ERR_CONNECTION_REFUSED: 'Trang từ chối kết nối',
+  ERR_CONNECTION_TIMED_OUT: 'Trang phản hồi quá lâu',
+};
 
 // ← → buttons are dimmed when there's nothing to go back/forward to, like Chrome
 function updNav(t: Tab) {
@@ -239,7 +262,9 @@ export function mute(t: Tab) {
 
 export const back = () => { if (active?.ready && active.wv.canGoBack()) active.wv.goBack(); focusPage(); };
 export const forward = () => { if (active?.ready && active.wv.canGoForward()) active.wv.goForward(); focusPage(); };
-export const reload = () => { if (active?.ready) active.wv.reload(); focusPage(); };
+// After an error, load the URL again: the failed page was never committed (a crashed one reloads either way)
+export const reload = () => { if (active?.ready) active.error ? active.wv.loadURL(active.url) : active.wv.reload(); focusPage(); };
+export const stop = () => { if (active?.ready) active.wv.stop(); };
 
 // ---------- Address bar (like Chrome) ----------
 export function go(raw: string) {

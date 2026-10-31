@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import { active, back, forget, forward, go, hideSug, marks, pip, reload, setUrlIn, suggest, sugIn, sugItems, sugSel, toggleStar, urlIn, urlKey, zoom, zooms } from '../browser';
+import { active, back, forget, forward, go, hideSug, marks, pip, reload, setUrlIn, stop, suggest, sugIn, sugItems, sugSel, toggleStar, urlIn, urlKey, zoom, zooms } from '../browser';
 import { hostOf, pretty } from '../url';
 import { Icon } from './Icon';
 
@@ -11,7 +11,9 @@ export function NavBar() {
     <div id="nav">
       <button id="back" title="Lùi (Alt+←)" disabled={!active?.canBack} onClick={back}><Icon name="back" /></button>
       <button id="fwd" title="Tới (Alt+→)" disabled={!active?.canFwd} onClick={forward}><Icon name="forward" /></button>
-      <button id="reload" title="Tải lại (F5)" onClick={reload}><Icon name="reload" /></button>
+      {active?.loading
+        ? <button id="reload" title="Dừng tải trang" onClick={stop}><Icon name="x" /></button>
+        : <button id="reload" title="Tải lại (F5)" onClick={reload}><Icon name="reload" /></button>}
       <div className="omni">
         <input
           id="url"
