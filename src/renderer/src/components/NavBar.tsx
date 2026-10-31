@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import { active, back, forget, forward, go, hideSug, marks, pip, reload, setUrlIn, stop, suggest, sugIn, sugItems, sugSel, toggleStar, urlIn, urlKey, zoom, zooms } from '../browser';
+import { active, back, downloadMenu, downloads, forget, forward, go, hideSug, marks, pip, reload, setUrlIn, stop, suggest, sugIn, sugItems, sugSel, toggleMenu, toggleStar, urlIn, urlKey, zoom, zooms } from '../browser';
 import { hostOf, pretty } from '../url';
 import { Icon } from './Icon';
 
@@ -7,6 +7,9 @@ import { Icon } from './Icon';
 export function NavBar() {
   const z = active ? zooms[hostOf(active.url)] || 1 : 1;
   const starred = !!active && marks.some((m) => m.url === active!.url);
+  const running = downloads.filter((d) => d.state === 'progressing');
+  const total = running.reduce((s, d) => s + d.total, 0);
+  const pct = total ? (running.reduce((s, d) => s + d.received, 0) / total) * 100 : 0;
   return (
     <div id="nav">
       <button id="back" title="Lùi (Alt+←)" disabled={!active?.canBack} onClick={back}><Icon name="back" /></button>
@@ -37,6 +40,10 @@ export function NavBar() {
           <Icon name="star" />
         </button>
       </div>
+      <button id="dl" className="mbtn" hidden={!downloads.length} title="Tải xuống" onClick={(e) => toggleMenu(e.currentTarget, downloadMenu)}>
+        <Icon name="download" />
+        {running.length > 0 && <i style={{ width: `calc((100% - 12px) * ${pct / 100})` }} />}
+      </button>
     </div>
   );
 }

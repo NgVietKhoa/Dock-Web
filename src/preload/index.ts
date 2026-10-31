@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import type { DockState, KeyAction, Saved, Theme } from '../shared/ipc';
+import type { DockState, Download, KeyAction, Saved, Theme } from '../shared/ipc';
 
 const api = {
   resizeStart: () => ipcRenderer.send('resize-start'),
@@ -14,6 +14,8 @@ const api = {
   quit: () => ipcRenderer.send('quit'),
   installUpdate: () => ipcRenderer.send('install-update'),
   filePath: (file: File) => webUtils.getPathForFile(file),
+  download: (id: number, action: 'open' | 'cancel') => ipcRenderer.send('download', id, action),
+  downloadsFolder: () => ipcRenderer.send('downloads-folder'),
   suggest: (q: string): Promise<string[]> => ipcRenderer.invoke('suggest', q),
   pip: (id: number): Promise<void> => ipcRenderer.invoke('pip', id),
   storeGet: (): Promise<Saved | null> => ipcRenderer.invoke('store-get'),
@@ -23,6 +25,7 @@ const api = {
   onKey: (cb: (action: KeyAction) => void) => ipcRenderer.on('key', (_e, action) => cb(action)),
   onUpdate: (cb: (version: string) => void) => ipcRenderer.on('update', (_e, version) => cb(version)),
   onAudio: (cb: (id: number, audible: boolean) => void) => ipcRenderer.on('audio', (_e, id, audible) => cb(id, audible)),
+  onDownload: (cb: (d: Download) => void) => ipcRenderer.on('download', (_e, d) => cb(d)),
 };
 contextBridge.exposeInMainWorld('dock', api);
 

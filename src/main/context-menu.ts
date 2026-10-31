@@ -11,7 +11,7 @@ export function contextMenu(contents: WebContents) {
     ]);
     if (p.mediaType === 'image') groups.push([
       { label: 'Mở ảnh trong tab mới', click: () => send('open-tab', p.srcURL) },
-      { label: 'Lưu ảnh…', click: () => contents.downloadURL(p.srcURL) },
+      { label: 'Lưu ảnh', click: () => contents.downloadURL(p.srcURL) },
       { label: 'Sao chép ảnh', click: () => contents.copyImageAt(p.x, p.y) },
       { label: 'Sao chép địa chỉ ảnh', click: () => clipboard.writeText(p.srcURL) },
     ]);

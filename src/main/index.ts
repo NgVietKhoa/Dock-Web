@@ -1,6 +1,7 @@
 import { app, globalShortcut, ipcMain, net, session } from 'electron';
 import path from 'path';
 import { contextMenu } from './context-menu';
+import { handleDownloads } from './downloads';
 import { googleLoginHeaders, googleLoginUA } from './google-login';
 import { hookKeys } from './keys';
 import { askPermissions } from './permissions';
@@ -52,6 +53,7 @@ app.whenReady().then(() => {
   const ses = session.fromPartition('persist:dock');
   googleLoginHeaders(ses);
   askPermissions(ses);
+  handleDownloads(ses);
   loadCfg();
   applyTheme();
   createTray();

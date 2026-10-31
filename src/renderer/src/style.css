@@ -67,6 +67,9 @@ button.on { background:var(--acc); color:#fff; }
 #nav .omni button { width:24px; height:24px; }
 #nav #zoom { width:auto; padding:0 8px; border-radius:12px; color:var(--mute); font-size:12px; }
 #star.on { color:#f5c518; }
+/* ⬇ button: thin bar = progress of the downloads still running */
+#nav #dl { position:relative; margin-left:2px; }
+#dl i { position:absolute; left:6px; bottom:3px; height:2px; border-radius:1px; background:var(--acc); }
 #star.on .ic { fill:currentColor; }
 
 #views { position:relative; flex:1; border-top:1px solid var(--edge); }

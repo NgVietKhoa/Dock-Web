@@ -2,7 +2,7 @@ import type { WebviewTag } from 'electron';
 import type { DragEvent, KeyboardEvent, ReactElement } from 'react';
 import { useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
-import type { Bookmark, DockState, HistoryEntry, KeyAction, Saved } from '../../shared/ipc';
+import type { Bookmark, DockState, Download, HistoryEntry, KeyAction, Saved } from '../../shared/ipc';
 import { hostOf, norm, pretty, SEARCH } from './url';
 
 // All UI state lives in this module; components read it directly and re-render on emit().
@@ -48,6 +48,7 @@ export let zooms: Record<string, number> = {};
 let hiddenSites: string[] = [];
 export let state: Partial<DockState> = {};
 export let update = ''; // version downloaded by the auto-updater
+export let downloads: Download[] = []; // this session's, newest first
 export let sugItems: SugItem[] = [], sugSel = -1;
 export const find = { open: false, n: '' };
 export let menu: { items: MenuItem[]; x: number; y: number; alignRight: boolean; owner: string } | null = null;
@@ -425,6 +426,20 @@ export function toggleMenu(btn: HTMLElement, items: () => MenuItem[]) {
   popMenu(items(), r.right, r.bottom + 2, true, btn.id);
 }
 
+// ---------- Downloads (⬇ button in the address bar) ----------
+const mb = (n: number) => (n / 1048576).toFixed(1) + ' MB';
+export function downloadMenu(): MenuItem[] {
+  return [
+    ...downloads.map((d): MenuItem => d.state === 'progressing'
+      ? { label: d.name, icon: 'download', hint: d.total ? Math.floor((d.received / d.total) * 100) + '%' : mb(d.received), tip: 'Bấm để huỷ tải', run: () => dock.download(d.id, 'cancel') }
+      : d.state === 'completed'
+        ? { label: d.name, icon: 'file', hint: mb(d.total || d.received), tip: 'Bấm để mở file', run: () => dock.download(d.id, 'open') }
+        : { label: d.name, icon: 'x', hint: d.state === 'cancelled' ? 'Đã huỷ' : 'Lỗi', run: () => {} }),
+    '-',
+    { label: 'Mở thư mục Tải xuống', icon: 'folder', run: () => dock.downloadsFolder() },
+  ];
+}
+
 // ---------- Messages from main ----------
 // Registered at load, before the window's did-finish-load sends the first state
 dock.onState((s) => {
@@ -434,6 +449,11 @@ dock.onState((s) => {
 });
 dock.onOpenTab((url) => openTab(url));
 dock.onUpdate((v) => { update = v; emit(); });
+dock.onDownload((d) => {
+  downloads = [d, ...downloads.filter((x) => x.id !== d.id)];
+  if (menu?.owner === 'dl') menu = { ...menu, items: downloadMenu() }; // live progress while the list is open
+  emit();
+});
 dock.onAudio((id, audible) => {
   const t = tabs.find((x) => x.wcId === id);
   if (t) { t.audible = audible; emit(); }

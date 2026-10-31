@@ -28,6 +28,8 @@ export interface Saved {
   hiddenSites?: string[]; // hosts removed from the home page's site tiles
 }
 
+export interface Download { id: number; name: string; received: number; total: number; state: 'progressing' | 'completed' | 'cancelled' | 'interrupted' }
+
 // main → renderer messages: channel → arguments
 export interface UiEvents {
   state: [DockState];
@@ -35,4 +37,5 @@ export interface UiEvents {
   'open-tab': [url: string];
   update: [version: string];
   audio: [webContentsId: number, audible: boolean];
+  download: [Download];
 }
