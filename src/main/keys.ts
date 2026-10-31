@@ -22,6 +22,8 @@ function keyAction(i: Input): KeyAction | null {
   if (c && (k === '=' || k === '+')) return 'zoomIn';
   if (c && k === '-') return 'zoomOut';
   if (c && k === '0') return 'zoomReset';
+  if (c && k === 'p') return 'print';
+  if (k === 'F12' || (c && i.shift && k === 'i')) return 'devtools';
   return null;
 }
 export function hookKeys(contents: WebContents) {

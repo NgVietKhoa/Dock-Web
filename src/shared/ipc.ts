@@ -19,7 +19,7 @@ export interface GlobalKeys { toggle: string; ghost: string }
 // Shortcuts caught in main and run by the renderer. tab1…tab9 = Ctrl+1…9
 export type KeyAction =
   | 'reopen' | 'hardReload' | 'reload' | 'newTab' | 'closeTab' | 'focusUrl' | 'back' | 'forward'
-  | 'prevTab' | 'nextTab' | 'bookmark' | 'find' | 'zoomIn' | 'zoomOut' | 'zoomReset' | `tab${number}`;
+  | 'prevTab' | 'nextTab' | 'bookmark' | 'find' | 'zoomIn' | 'zoomOut' | 'zoomReset' | 'print' | 'devtools' | `tab${number}`;
 
 export interface HistoryEntry { url: string; title: string; icon?: string; n: number; t: number } // n = visit count, t = last visit
 export interface Bookmark { url: string; title: string; icon: string }

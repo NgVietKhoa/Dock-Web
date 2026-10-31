@@ -105,6 +105,11 @@ export function forget(h: HistoryEntry) {
 export function clearHistory() {
   if (confirm('Xoá toàn bộ lịch sử duyệt web?')) { hist = []; store('history', hist); emit(); }
 }
+export async function clearData() {
+  if (!confirm('Xoá cookie và dữ liệu của mọi trang web? Bạn sẽ bị đăng xuất khỏi mọi tài khoản.')) return;
+  await dock.clearData();
+  tabs.forEach((t) => t.ready && t.wv.reload());
+}
 
 // Home page tiles: most visited sites. Grouped by host, otherwise single YouTube/TikTok videos would fill every tile
 export function topSites() {
@@ -475,6 +480,8 @@ const keys: Partial<Record<KeyAction, () => void>> = {
   zoomIn: () => zoom(1),
   zoomOut: () => zoom(-1),
   zoomReset: () => zoom(0),
+  print: () => active?.ready && active.wv.print(),
+  devtools: () => active?.ready && (active.wv.isDevToolsOpened() ? active.wv.closeDevTools() : active.wv.openDevTools()),
 };
 dock.onKey((a) => {
   const n = /^tab(\d)$/.exec(a);

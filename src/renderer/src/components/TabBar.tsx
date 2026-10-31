@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type MouseEvent } from 'react';
 import type { GlobalKeys, Theme } from '../../../shared/ipc';
-import { active, clearHistory, close, mute, newTab, popMenu, save, select, sortable, state, tabs, toggleMenu, update, useBrowser, type MenuItem, type Tab } from '../browser';
+import { active, clearData, clearHistory, close, mute, newTab, popMenu, save, select, sortable, state, tabs, toggleMenu, update, useBrowser, type MenuItem, type Tab } from '../browser';
 import { pretty } from '../url';
 import { Fav, Icon } from './Icon';
 
@@ -81,6 +81,7 @@ function moreMenu(): MenuItem[] {
     <label>Phím xuyên chuột <KeyInput action="ghost" /></label>,
     '-',
     { label: 'Xoá lịch sử duyệt web', icon: 'trash', run: clearHistory },
+    { label: 'Xoá cookie và dữ liệu trang web', icon: 'trash', run: clearData },
     { label: 'Thoát hẳn', icon: 'power', run: () => dock.quit() },
   ];
 }

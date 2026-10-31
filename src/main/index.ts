@@ -6,7 +6,7 @@ import { handleDownloads } from './downloads';
 import { googleLoginHeaders, googleLoginUA } from './google-login';
 import { hookKeys } from './keys';
 import { askPermissions } from './permissions';
-import { loadCfg } from './store';
+import { cfg, loadCfg, saveCfg } from './store';
 import { checkUpdate } from './updater';
 import { applyTheme, createTray, createWindow, icon, registerKeys, send, show, tray, win } from './window';
 
@@ -20,6 +20,15 @@ ipcMain.handle('suggest', async (_e, q: string) => {
     const r = await net.fetch('https://suggestqueries.google.com/complete/search?client=chrome&hl=vi&ie=utf-8&oe=utf-8&q=' + encodeURIComponent(q));
     return (await r.json())[1] || [];
   } catch { return []; }
+});
+
+// ⋯ → "Xoá cookie và dữ liệu trang web": signs out of every site and forgets the camera/micro/… answers
+ipcMain.handle('clear-data', async () => {
+  const ses = session.fromPartition('persist:dock');
+  await ses.clearStorageData();
+  await ses.clearCache();
+  cfg.perms = {};
+  saveCfg();
 });
 
 app.on('web-contents-created', (_e, contents) => {

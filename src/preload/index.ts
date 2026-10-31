@@ -11,6 +11,7 @@ const api = {
   adblock: () => ipcRenderer.send('adblock'),
   autoStart: () => ipcRenderer.send('auto-start'),
   globalKey: (action: keyof GlobalKeys, key: string): Promise<boolean> => ipcRenderer.invoke('global-key', action, key),
+  clearData: (): Promise<void> => ipcRenderer.invoke('clear-data'),
   minimize: () => ipcRenderer.send('minimize'),
   maximize: () => ipcRenderer.send('maximize'),
   hide: () => ipcRenderer.send('hide'),

@@ -59,6 +59,7 @@ export function createWindow() {
   const remember = () => { if (!win.isMinimized()) { cfg.bounds = win.getBounds(); saveCfg(); } };
   win.on('move', remember);
   win.on('resize', remember);
+  win.on('moved', snap);
   win.on('maximize', sendState);
   win.on('unmaximize', sendState);
   // ✕ / Alt+F4 only hides to the tray; quit for real via the ⋯ menu or the tray icon
@@ -66,6 +67,15 @@ export function createWindow() {
   return win;
 }
 app.on('before-quit', () => { quitting = true; });
+
+// Dock to the screen edge: dropped within 16px of an edge → stick to it
+function snap() {
+  if (win.isMaximized()) return;
+  const b = win.getBounds(), w = screen.getDisplayMatching(b).workArea, near = (a: number, c: number) => Math.abs(a - c) < 16;
+  const x = near(b.x, w.x) ? w.x : near(b.x + b.width, w.x + w.width) ? w.x + w.width - b.width : b.x;
+  const y = near(b.y, w.y) ? w.y : near(b.y + b.height, w.y + w.height) ? w.y + w.height - b.height : b.y;
+  if (x !== b.x || y !== b.y) win.setPosition(x, y);
+}
 
 export function createTray() {
   icon = nativeImage.createFromPath(iconFile);
