@@ -172,6 +172,8 @@ webview.on { visibility:visible; }
 #menu hr { margin:3px 4px; border:0; border-top:1px solid var(--tab); }
 #menu label { display:flex; align-items:center; gap:8px; padding:4px 10px 4px 32px; white-space:nowrap; }
 #menu input[type=range] { width:90px; }
+#menu input.key { width:130px; margin-left:auto; padding:2px 6px; background:var(--bg); color:var(--fg); border:1px solid var(--tab); border-radius:4px; outline:none; font:inherit; cursor:pointer; }
+#menu input.key:focus { border-color:var(--acc); }
 
 #ghost { position:fixed; left:8px; bottom:8px; z-index:40; display:none; padding:4px 10px; border-radius:6px; background:rgba(0,0,0,.75); color:#fff; font-size:12px; pointer-events:none; }
 body.ghost #ghost { display:flex; align-items:center; gap:6px; }

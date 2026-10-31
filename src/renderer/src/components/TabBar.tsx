@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type MouseEvent } from 'react';
-import type { Theme } from '../../../shared/ipc';
-import { active, clearHistory, close, mute, newTab, popMenu, save, select, sortable, state, tabs, toggleMenu, update, type MenuItem, type Tab } from '../browser';
+import type { GlobalKeys, Theme } from '../../../shared/ipc';
+import { active, clearHistory, close, mute, newTab, popMenu, save, select, sortable, state, tabs, toggleMenu, update, useBrowser, type MenuItem, type Tab } from '../browser';
 import { pretty } from '../url';
 import { Fav, Icon } from './Icon';
 
@@ -19,7 +19,7 @@ export function TabBar() {
         <button id="max" title={(state.maximized ? 'Thu lại' : 'Phóng to') + ' (hoặc nhấp đúp thanh)'} onClick={() => dock.maximize()}>
           <Icon name={state.maximized ? 'restore' : 'maximize'} />
         </button>
-        <button id="close" title="Ẩn xuống khay (Ctrl+Shift+Space để mở lại)" onClick={() => dock.hide()}><Icon name="x" /></button>
+        <button id="close" title={`Ẩn xuống khay (${state.keys?.toggle} để mở lại)`} onClick={() => dock.hide()}><Icon name="x" /></button>
       </div>
     </div>
   );
@@ -73,12 +73,31 @@ function moreMenu(): MenuItem[] {
       <input type="range" min="0.3" max="1" step="0.05" defaultValue={state.opacity ?? 1}
         onInput={(e) => { state.opacity = parseFloat(e.currentTarget.value); dock.opacity(state.opacity); }} />
     </label>,
-    { label: 'Xuyên chuột', icon: 'ghost', on: state.ghost, hint: 'Ctrl+Alt+Space', run: () => dock.ghost() },
+    { label: 'Xuyên chuột', icon: 'ghost', on: state.ghost, hint: state.keys?.ghost, run: () => dock.ghost() },
     '-',
     { label: 'Chặn quảng cáo', icon: 'shield', on: state.adblock, run: () => dock.adblock() },
     ...(state.autoStart === undefined ? [] : [{ label: 'Khởi động cùng Windows', icon: 'power', on: state.autoStart, run: () => dock.autoStart() }]),
+    <label>Phím ẩn/hiện <KeyInput action="toggle" /></label>,
+    <label>Phím xuyên chuột <KeyInput action="ghost" /></label>,
     '-',
     { label: 'Xoá lịch sử duyệt web', icon: 'trash', run: clearHistory },
     { label: 'Thoát hẳn', icon: 'power', run: () => dock.quit() },
   ];
+}
+
+// Global shortcut box: focus it and press the new combo. Needs Ctrl or Alt so it can't fire while typing in another app
+function KeyInput({ action }: { action: keyof GlobalKeys }) {
+  useBrowser(); // menu rows are built when the menu opens → subscribe to show the new key while it stays open
+  return (
+    <input className="key" readOnly value={state.keys?.[action] ?? ''} title="Bấm vào rồi nhấn tổ hợp phím mới"
+      onKeyDown={async (e) => {
+        e.preventDefault();
+        const box = e.currentTarget;
+        if (e.key === 'Escape') return box.blur();
+        if (/^(Control|Shift|Alt|Meta)/.test(e.code) || !(e.ctrlKey || e.altKey)) return;
+        const key = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.code.replace(/^(Key|Digit|Arrow)/, '')].filter(Boolean).join('+');
+        if (await dock.globalKey(action, key)) box.blur();
+        else alert(`Không dùng được ${key}: app khác đang dùng hoặc phím không hỗ trợ.`);
+      }} />
+  );
 }

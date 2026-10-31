@@ -1,13 +1,14 @@
 import { app, ipcMain, type Rectangle } from 'electron';
 import fs from 'fs';
 import path from 'path';
-import type { Saved, Theme } from '../shared/ipc';
+import type { GlobalKeys, Saved, Theme } from '../shared/ipc';
 
 const cfgFile = () => path.join(app.getPath('userData'), 'float-config.json');
 export const cfg = {
   bounds: null as Rectangle | null, opacity: 1, pinned: true, trayHinted: false, theme: 'system' as Theme,
   perms: {} as Record<string, boolean>, // "origin permission" → allowed, see permissions.ts
   adblock: true,
+  keys: { toggle: 'Ctrl+Shift+Space', ghost: 'Ctrl+Alt+Space' } as GlobalKeys,
 };
 let saveTimer: NodeJS.Timeout | undefined;
 

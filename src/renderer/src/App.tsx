@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
-import { active, moving, openTab, reload, restore, useBrowser, views } from './browser';
+import { active, moving, openTab, reload, restore, state, useBrowser, views } from './browser';
 import { Bookmarks } from './components/Bookmarks';
 import { FindBar } from './components/FindBar';
 import { Home } from './components/Home';
@@ -80,7 +80,7 @@ export function App() {
       <div id="shield" className={shield ? 'on' : ''} />
       <Suggestions />
       <Menu />
-      <div id="ghost"><Icon name="ghost" />Đang xuyên chuột · Ctrl+Alt+Space để tắt</div>
+      <div id="ghost"><Icon name="ghost" />Đang xuyên chuột · {state.keys?.ghost} để tắt</div>
     </>
   );
 }

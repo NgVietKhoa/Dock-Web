@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import type { DockState, Download, KeyAction, Saved, Theme } from '../shared/ipc';
+import type { DockState, Download, GlobalKeys, KeyAction, Saved, Theme } from '../shared/ipc';
 
 const api = {
   resizeStart: () => ipcRenderer.send('resize-start'),
@@ -10,6 +10,7 @@ const api = {
   ghost: () => ipcRenderer.send('ghost'),
   adblock: () => ipcRenderer.send('adblock'),
   autoStart: () => ipcRenderer.send('auto-start'),
+  globalKey: (action: keyof GlobalKeys, key: string): Promise<boolean> => ipcRenderer.invoke('global-key', action, key),
   minimize: () => ipcRenderer.send('minimize'),
   maximize: () => ipcRenderer.send('maximize'),
   hide: () => ipcRenderer.send('hide'),

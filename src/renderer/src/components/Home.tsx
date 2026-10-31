@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { go, hideSite, hideSug, openTab, showSites, suggest, topSites, urlKey } from '../browser';
+import { go, hideSite, hideSug, openTab, showSites, state, suggest, topSites, urlKey } from '../browser';
 import logo from '../../../../build/icon.ico'; // the app icon, same file as the installer's
 import { Fav, Icon } from './Icon';
 
@@ -60,7 +60,7 @@ export function Home() {
       ) : (
         <div className="hint">
           Kéo link thả vào cửa sổ để mở · nắm chỗ trống trên thanh để di chuyển · kéo mép hoặc góc để đổi kích thước<br />
-          Ctrl + Shift + Space: ẩn/hiện · Ctrl + Alt + Space: xuyên chuột
+          {state.keys?.toggle}: ẩn/hiện · {state.keys?.ghost}: xuyên chuột
         </div>
       )}
     </div>

@@ -8,7 +8,7 @@ import { hookKeys } from './keys';
 import { askPermissions } from './permissions';
 import { loadCfg } from './store';
 import { checkUpdate } from './updater';
-import { applyTheme, createTray, createWindow, icon, send, show, toggle, toggleGhost, tray, win } from './window';
+import { applyTheme, createTray, createWindow, icon, registerKeys, send, show, tray, win } from './window';
 
 // The installed build is named "Dock Web" → by default it stores data somewhere other than `npm start`.
 // Pin one folder so both share tabs, bookmarks, history and logins
@@ -63,12 +63,10 @@ app.whenReady().then(() => {
   hookKeys(w.webContents);
   contextMenu(w.webContents); // address bar, find box, bookmark rename (tab/bookmark menus preventDefault → never reach here)
   checkUpdate();
-  // Global shortcuts may already be taken by other apps (Unikey, screenshot tools…) → notify instead of failing silently
-  const taken = ([['Ctrl+Shift+Space', toggle], ['Ctrl+Alt+Space', toggleGhost]] as const)
-    .filter(([k, fn]) => !globalShortcut.register(k.replace('Ctrl', 'CommandOrControl'), fn))
-    .map(([k]) => k);
+  // Global shortcuts may already be taken by other apps → notify instead of failing silently
+  const taken = registerKeys();
   if (taken.length) {
-    tray.displayBalloon({ iconType: 'warning', title: 'Phím tắt bị app khác chiếm', content: `${taken.join(', ')} không dùng được. Dùng icon ở khay thay thế.` });
+    tray.displayBalloon({ iconType: 'warning', title: 'Phím tắt bị app khác chiếm', content: `${taken.join(', ')} không dùng được. Đổi phím trong menu ⋯ của Dock Web.` });
   }
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());

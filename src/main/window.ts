@@ -1,8 +1,8 @@
 /// <reference types="electron-vite/node" />
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, nativeTheme, screen, Tray, type NativeImage, type Rectangle } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, nativeTheme, screen, Tray, type NativeImage, type Rectangle } from 'electron';
 import path from 'path';
 import iconFile from '../../build/icon.ico?asset'; // same icon as the installer; .ico holds every size 16–256px
-import type { Theme, UiEvents } from '../shared/ipc';
+import type { GlobalKeys, Theme, UiEvents } from '../shared/ipc';
 import { fadePip, togglePip } from './pip';
 import { cfg, saveCfg } from './store';
 
@@ -87,7 +87,7 @@ function applyPin() {
 }
 
 export function sendState() {
-  send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost, maximized: win.isMaximized(), theme: cfg.theme, adblock: cfg.adblock, autoStart: autoStart() });
+  send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost, maximized: win.isMaximized(), theme: cfg.theme, adblock: cfg.adblock, autoStart: autoStart(), keys: cfg.keys });
   tray?.setContextMenu(trayMenu());
 }
 
@@ -97,7 +97,7 @@ function hide() {
   if (!cfg.trayHinted) {
     cfg.trayHinted = true;
     saveCfg();
-    tray.displayBalloon({ iconType: 'info', title: 'Dock Web vẫn đang chạy', content: 'Bấm icon ở khay hoặc Ctrl+Shift+Space để mở lại.' });
+    tray.displayBalloon({ iconType: 'info', title: 'Dock Web vẫn đang chạy', content: `Bấm icon ở khay hoặc ${cfg.keys.toggle} để mở lại.` });
   }
 }
 export function toggle() {
@@ -138,10 +138,27 @@ function toggleAutoStart() {
   sendState();
 }
 
+// Global shortcuts. One already taken by another app (Unikey, screenshot tools…) fails to register → false
+const GLOBAL: Record<keyof GlobalKeys, () => void> = { toggle, ghost: toggleGhost };
+const accel = (key: string) => key.replace('Ctrl', 'CommandOrControl');
+function register(action: keyof GlobalKeys, key: string) {
+  try { return globalShortcut.register(accel(key), GLOBAL[action]); } catch { return false; } // throws on keys Electron can't name
+}
+export const registerKeys = () => (Object.keys(GLOBAL) as (keyof GlobalKeys)[]).filter((a) => !register(a, cfg.keys[a])).map((a) => cfg.keys[a]);
+ipcMain.handle('global-key', (_e, action: keyof GlobalKeys, key: string) => {
+  if (key === cfg.keys[action]) return true;
+  if (!register(action, key)) return false;
+  globalShortcut.unregister(accel(cfg.keys[action]));
+  cfg.keys[action] = key;
+  saveCfg();
+  sendState();
+  return true;
+});
+
 function trayMenu() {
   return Menu.buildFromTemplate([
-    { label: 'Mở Dock Web', accelerator: 'CommandOrControl+Shift+Space', registerAccelerator: false, click: show },
-    { label: 'Xuyên chuột', type: 'checkbox', checked: ghost, accelerator: 'CommandOrControl+Alt+Space', registerAccelerator: false, click: toggleGhost },
+    { label: 'Mở Dock Web', accelerator: accel(cfg.keys.toggle), registerAccelerator: false, click: show },
+    { label: 'Xuyên chuột', type: 'checkbox', checked: ghost, accelerator: accel(cfg.keys.ghost), registerAccelerator: false, click: toggleGhost },
     { label: 'Luôn nằm trên cùng', type: 'checkbox', checked: cfg.pinned, click: togglePin },
     { label: 'Khởi động cùng Windows', type: 'checkbox', checked: !!autoStart(), visible: app.isPackaged, click: toggleAutoStart },
     { type: 'separator' },

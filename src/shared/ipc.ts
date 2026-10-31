@@ -10,7 +10,11 @@ export interface DockState {
   theme: Theme;
   adblock: boolean;
   autoStart?: boolean; // undefined = not offered (`npm start`)
+  keys: GlobalKeys;
 }
+
+// Shortcuts that work from any app (globalShortcut), changeable in the ⋯ menu
+export interface GlobalKeys { toggle: string; ghost: string }
 
 // Shortcuts caught in main and run by the renderer. tab1…tab9 = Ctrl+1…9
 export type KeyAction =
