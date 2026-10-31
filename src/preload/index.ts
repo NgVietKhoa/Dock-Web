@@ -8,6 +8,7 @@ const api = {
   pin: () => ipcRenderer.send('pin'),
   theme: (v: Theme) => ipcRenderer.send('theme', v),
   ghost: () => ipcRenderer.send('ghost'),
+  adblock: () => ipcRenderer.send('adblock'),
   minimize: () => ipcRenderer.send('minimize'),
   maximize: () => ipcRenderer.send('maximize'),
   hide: () => ipcRenderer.send('hide'),

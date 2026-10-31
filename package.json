@@ -49,6 +49,7 @@
     "url": "https://github.com/NgVietKhoa/Dock-Web.git"
   },
   "dependencies": {
+    "@ghostery/adblocker-electron": "^2.20.3",
     "electron-updater": "^6.8.11",
     "koffi": "^3.3.5"
   }

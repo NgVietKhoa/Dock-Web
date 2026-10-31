@@ -75,6 +75,8 @@ function moreMenu(): MenuItem[] {
     </label>,
     { label: 'Xuyên chuột', icon: 'ghost', on: state.ghost, hint: 'Ctrl+Alt+Space', run: () => dock.ghost() },
     '-',
+    { label: 'Chặn quảng cáo', icon: 'shield', on: state.adblock, run: () => dock.adblock() },
+    '-',
     { label: 'Xoá lịch sử duyệt web', icon: 'trash', run: clearHistory },
     { label: 'Thoát hẳn', icon: 'power', run: () => dock.quit() },
   ];

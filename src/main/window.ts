@@ -85,8 +85,8 @@ function applyPin() {
   win.setVisibleOnAllWorkspaces(cfg.pinned, { visibleOnFullScreen: true });
 }
 
-function sendState() {
-  send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost, maximized: win.isMaximized(), theme: cfg.theme });
+export function sendState() {
+  send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost, maximized: win.isMaximized(), theme: cfg.theme, adblock: cfg.adblock });
   tray?.setContextMenu(trayMenu());
 }
 

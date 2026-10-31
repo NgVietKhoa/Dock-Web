@@ -8,6 +8,7 @@ export interface DockState {
   ghost: boolean;
   maximized: boolean;
   theme: Theme;
+  adblock: boolean;
 }
 
 // Shortcuts caught in main and run by the renderer. tab1…tab9 = Ctrl+1…9
