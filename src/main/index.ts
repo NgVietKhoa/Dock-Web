@@ -3,6 +3,7 @@ import path from 'path';
 import { contextMenu } from './context-menu';
 import { googleLoginHeaders, googleLoginUA } from './google-login';
 import { hookKeys } from './keys';
+import { askPermissions } from './permissions';
 import { loadCfg } from './store';
 import { checkUpdate } from './updater';
 import { applyTheme, createTray, createWindow, icon, send, show, toggle, toggleGhost, tray, win } from './window';
@@ -48,7 +49,9 @@ app.whenReady().then(() => {
     .replace(/ Electron\/\S+/, '')
     .replace(` ${app.getName()}/${app.getVersion()}`, '')
     .replace(/Chrome\/(\d+)[\d.]*/, 'Chrome/$1.0.0.0');
-  googleLoginHeaders(session.fromPartition('persist:dock'));
+  const ses = session.fromPartition('persist:dock');
+  googleLoginHeaders(ses);
+  askPermissions(ses);
   loadCfg();
   applyTheme();
   createTray();

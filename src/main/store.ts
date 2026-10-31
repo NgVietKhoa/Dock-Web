@@ -4,7 +4,10 @@ import path from 'path';
 import type { Saved, Theme } from '../shared/ipc';
 
 const cfgFile = () => path.join(app.getPath('userData'), 'float-config.json');
-export const cfg = { bounds: null as Rectangle | null, opacity: 1, pinned: true, trayHinted: false, theme: 'system' as Theme };
+export const cfg = {
+  bounds: null as Rectangle | null, opacity: 1, pinned: true, trayHinted: false, theme: 'system' as Theme,
+  perms: {} as Record<string, boolean>, // "origin permission" → allowed, see permissions.ts
+};
 let saveTimer: NodeJS.Timeout | undefined;
 
 export function loadCfg() {
