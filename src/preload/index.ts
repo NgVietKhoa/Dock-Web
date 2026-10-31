@@ -9,6 +9,7 @@ const api = {
   theme: (v: Theme) => ipcRenderer.send('theme', v),
   ghost: () => ipcRenderer.send('ghost'),
   adblock: () => ipcRenderer.send('adblock'),
+  autoStart: () => ipcRenderer.send('auto-start'),
   minimize: () => ipcRenderer.send('minimize'),
   maximize: () => ipcRenderer.send('maximize'),
   hide: () => ipcRenderer.send('hide'),

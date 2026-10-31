@@ -40,6 +40,7 @@ export function createWindow() {
     minHeight: 160,
     frame: false,
     icon,
+    show: !process.argv.includes('--hidden'), // started with Windows → only the tray icon
     backgroundColor: bgColor(),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -86,7 +87,7 @@ function applyPin() {
 }
 
 export function sendState() {
-  send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost, maximized: win.isMaximized(), theme: cfg.theme, adblock: cfg.adblock });
+  send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost, maximized: win.isMaximized(), theme: cfg.theme, adblock: cfg.adblock, autoStart: autoStart() });
   tray?.setContextMenu(trayMenu());
 }
 
@@ -129,11 +130,20 @@ export function toggleGhost() {
   sendState();
 }
 
+// Start with Windows, only the tray icon showing. Installed build only: under `npm start` it would register electron.exe
+const LOGIN = { args: ['--hidden'] };
+const autoStart = () => (app.isPackaged ? app.getLoginItemSettings(LOGIN).openAtLogin : undefined);
+function toggleAutoStart() {
+  app.setLoginItemSettings({ ...LOGIN, openAtLogin: !autoStart() });
+  sendState();
+}
+
 function trayMenu() {
   return Menu.buildFromTemplate([
     { label: 'Mở Dock Web', accelerator: 'CommandOrControl+Shift+Space', registerAccelerator: false, click: show },
     { label: 'Xuyên chuột', type: 'checkbox', checked: ghost, accelerator: 'CommandOrControl+Alt+Space', registerAccelerator: false, click: toggleGhost },
     { label: 'Luôn nằm trên cùng', type: 'checkbox', checked: cfg.pinned, click: togglePin },
+    { label: 'Khởi động cùng Windows', type: 'checkbox', checked: !!autoStart(), visible: app.isPackaged, click: toggleAutoStart },
     { type: 'separator' },
     { label: 'Thoát', click: () => app.quit() },
   ]);
@@ -161,6 +171,7 @@ ipcMain.on('theme', (_e, v: Theme) => { cfg.theme = v; applyTheme(); saveCfg(); 
 nativeTheme.on('updated', () => win?.setBackgroundColor(bgColor())); // our choice, or Windows switching light/dark in 'system' mode
 ipcMain.on('pin', togglePin);
 ipcMain.on('ghost', toggleGhost);
+ipcMain.on('auto-start', toggleAutoStart);
 ipcMain.on('minimize', () => win.minimize());
 ipcMain.on('maximize', () => (win.isMaximized() ? win.unmaximize() : win.maximize()));
 ipcMain.on('hide', hide);

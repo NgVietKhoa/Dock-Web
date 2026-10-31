@@ -76,6 +76,7 @@ function moreMenu(): MenuItem[] {
     { label: 'Xuyên chuột', icon: 'ghost', on: state.ghost, hint: 'Ctrl+Alt+Space', run: () => dock.ghost() },
     '-',
     { label: 'Chặn quảng cáo', icon: 'shield', on: state.adblock, run: () => dock.adblock() },
+    ...(state.autoStart === undefined ? [] : [{ label: 'Khởi động cùng Windows', icon: 'power', on: state.autoStart, run: () => dock.autoStart() }]),
     '-',
     { label: 'Xoá lịch sử duyệt web', icon: 'trash', run: clearHistory },
     { label: 'Thoát hẳn', icon: 'power', run: () => dock.quit() },

@@ -9,6 +9,7 @@ export interface DockState {
   maximized: boolean;
   theme: Theme;
   adblock: boolean;
+  autoStart?: boolean; // undefined = not offered (`npm start`)
 }
 
 // Shortcuts caught in main and run by the renderer. tab1…tab9 = Ctrl+1…9
