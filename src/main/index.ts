@@ -1,7 +1,6 @@
 import { app, globalShortcut, ipcMain, net, session } from 'electron';
 import path from 'path';
 import { hostOf } from '../renderer/src/url';
-import { adblock } from './adblock';
 import { contextMenu } from './context-menu';
 import { handleDownloads } from './downloads';
 import { googleLoginHeaders, googleLoginUA } from './google-login';
@@ -105,7 +104,6 @@ app.whenReady().then(() => {
     passwords(ses);
   }
   loadCfg();
-  adblock(sessions);
   applyTheme();
   createTray();
   const w = createWindow();

@@ -77,7 +77,6 @@ function moreMenu(): MenuItem[] {
     </label>,
     { label: 'Xuyên chuột', icon: 'ghost', on: state.ghost, hint: state.keys?.ghost, run: () => dock.ghost() },
     '-',
-    { label: 'Chặn quảng cáo', icon: 'shield', on: state.adblock, run: () => dock.adblock() },
     ...(state.autoStart === undefined ? [] : [{ label: 'Khởi động cùng Windows', icon: 'power', on: state.autoStart, run: () => dock.autoStart() }]),
     <label>Phím ẩn/hiện <KeyInput action="toggle" /></label>,
     <label>Phím xuyên chuột <KeyInput action="ghost" /></label>,

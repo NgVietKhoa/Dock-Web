@@ -38,7 +38,6 @@ Dock Web updates itself: when a new version is out it downloads in the backgroun
 - **Screen sharing** (Google Meet, Zoom on the web…): pick a screen or a window from the menu that pops up.
 - Stays signed in between launches. "Sign in with Google/Facebook" popups open in their own window.
 - Drag a link, file or URL from another browser into the window to open it in a new tab.
-- **Ad blocking** (⋯ menu, on by default): blocks ads and trackers with EasyList-style lists, refreshed weekly. YouTube changes its ads often, so some may still get through.
 - **Site permissions:** camera, microphone, location, notifications and clipboard reading ask first, like Chrome; the answer is remembered per site.
 - **Saved passwords:** after signing in, Dock Web offers to save the password (encrypted for your Windows account); click a sign-in box later to pick a saved account. Manage them in ⋯ → *Mật khẩu đã lưu*.
 - **Downloads** go straight into your Downloads folder; the ⬇ button in the address bar shows progress (click to pause/resume, middle-click to cancel) and opens finished files (progress also shows on the taskbar).
@@ -92,7 +91,7 @@ Built with [Electron](https://www.electronjs.org/), [electron-vite](https://elec
 
 | Folder | Role |
 |---|---|
-| `src/main/` | Window, system tray, global shortcuts, right-click menu, video pinning, Google sign-in handling, site permissions, downloads, ad blocking, auto-update, saved data (`store.json`) |
+| `src/main/` | Window, system tray, global shortcuts, right-click menu, video pinning, Google sign-in handling, site permissions, downloads, auto-update, saved data (`store.json`) |
 | `src/preload/` | Secure bridge between the UI and the main process |
 | `src/renderer/` | The UI: `browser.ts` holds the tabs/history/bookmarks state and actions, `components/` renders it |
 | `src/shared/` | Types shared by all three (IPC messages, saved data) |

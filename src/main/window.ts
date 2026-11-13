@@ -98,7 +98,7 @@ function applyPin() {
 }
 
 export function sendState() {
-  send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost, maximized: win.isMaximized(), theme: cfg.theme, adblock: cfg.adblock, autoStart: autoStart(), keys: cfg.keys });
+  send('state', { opacity: cfg.opacity, pinned: cfg.pinned, ghost, maximized: win.isMaximized(), theme: cfg.theme, autoStart: autoStart(), keys: cfg.keys });
   tray?.setContextMenu(trayMenu());
 }
 

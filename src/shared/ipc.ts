@@ -8,7 +8,6 @@ export interface DockState {
   ghost: boolean;
   maximized: boolean;
   theme: Theme;
-  adblock: boolean;
   autoStart?: boolean; // undefined = not offered (`npm start`)
   keys: GlobalKeys;
 }

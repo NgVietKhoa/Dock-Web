@@ -8,7 +8,6 @@ const api = {
   pin: () => ipcRenderer.send('pin'),
   theme: (v: Theme) => ipcRenderer.send('theme', v),
   ghost: () => ipcRenderer.send('ghost'),
-  adblock: () => ipcRenderer.send('adblock'),
   autoStart: () => ipcRenderer.send('auto-start'),
   globalKey: (action: keyof GlobalKeys, key: string): Promise<boolean> => ipcRenderer.invoke('global-key', action, key),
   clearData: (): Promise<void> => ipcRenderer.invoke('clear-data'),
