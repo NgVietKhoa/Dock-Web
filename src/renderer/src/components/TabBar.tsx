@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type MouseEvent } from 'react';
 import type { GlobalKeys, Theme } from '../../../shared/ipc';
-import { active, clearData, clearHistory, close, mute, newTab, popMenu, save, select, sortable, state, tabs, toggleMenu, update, useBrowser, type MenuItem, type Tab } from '../browser';
+import { active, clearData, clearHistory, close, mute, newTab, popMenu, save, select, sortable, state, tabs, toggleHistory, toggleMenu, update, useBrowser, type MenuItem, type Tab } from '../browser';
 import { pretty } from '../url';
 import { Fav, Icon } from './Icon';
 
@@ -10,7 +10,7 @@ export function TabBar() {
     <div id="bar">
       <span id="grab" title="Nắm chỗ này (hoặc chỗ trống trên thanh) để kéo cửa sổ"><Icon name="grip" /></span>
       <div id="tabs">{tabs.map((t) => <TabItem key={t.id} t={t} />)}</div>
-      <button id="add" title="Tab mới (Ctrl+T)" onClick={newTab}><Icon name="plus" /></button>
+      <button id="add" title="Tab mới (Ctrl+T)" onClick={() => newTab()}><Icon name="plus" /></button>
       <div className="win">
         <button id="update" className="on" hidden={!update} title={`Đã tải bản ${update} · bấm để khởi động lại và cập nhật`} onClick={() => dock.installUpdate()}>Cập nhật</button>
         <button id="pin" className={state.pinned ? 'on' : ''} title="Luôn nằm trên cùng" onClick={() => dock.pin()}><Icon name="pin" /></button>
@@ -34,7 +34,7 @@ function TabItem({ t }: { t: Tab }) {
   return (
     <div
       ref={ref}
-      className={'tab' + (on ? ' on' : '') + (t.audible ? ' audible' : '') + (t.muted ? ' muted' : '')}
+      className={'tab' + (on ? ' on' : '') + (t.audible ? ' audible' : '') + (t.muted ? ' muted' : '') + (t.incognito ? ' incognito' : '')}
       title={t.title || ''}
       onClick={() => select(t)}
       onAuxClick={(e) => { if (e.button === 1) close(t); }}
@@ -64,6 +64,8 @@ function tabMenu(t: Tab, e: MouseEvent) {
 function moreMenu(): MenuItem[] {
   const theme = (v: Theme, label: string, icon: string) => ({ label, icon, on: (state.theme ?? 'system') === v, run: () => dock.theme(v) });
   return [
+    { label: 'Tab ẩn danh mới', icon: 'ghost', hint: 'Ctrl+Shift+N', run: () => newTab(true) },
+    '-',
     theme('system', 'Giao diện theo hệ thống', 'monitor'),
     theme('light', 'Giao diện sáng', 'sun'),
     theme('dark', 'Giao diện tối', 'moon'),
@@ -80,6 +82,8 @@ function moreMenu(): MenuItem[] {
     <label>Phím ẩn/hiện <KeyInput action="toggle" /></label>,
     <label>Phím xuyên chuột <KeyInput action="ghost" /></label>,
     '-',
+    { label: 'Lịch sử', icon: 'history', hint: 'Ctrl+H', run: toggleHistory },
+    { label: 'Mật khẩu đã lưu', icon: 'shield', run: () => dock.passwords() },
     { label: 'Xoá lịch sử duyệt web', icon: 'trash', run: clearHistory },
     { label: 'Xoá cookie và dữ liệu trang web', icon: 'trash', run: clearData },
     { label: 'Thoát hẳn', icon: 'power', run: () => dock.quit() },

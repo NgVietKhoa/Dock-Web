@@ -8,21 +8,23 @@ import { sendState } from './window';
 // Ads + trackers blocked with Ghostery's prebuilt lists (EasyList…). The compiled lists are cached in userData and
 // fetched again after a week so new ad domains get blocked
 let blocker: ElectronBlocker | undefined;
-let ses: Session;
+let sessions: Session[] = []; // normal + incognito tabs
 
-export async function adblock(s: Session) {
-  ses = s;
+export async function adblock(s: Session[]) {
+  sessions = s;
   const cache = path.join(app.getPath('userData'), 'adblock.bin');
   try { if (Date.now() - fs.statSync(cache).mtimeMs > 7 * 864e5) fs.unlinkSync(cache); } catch {}
+  let b: ElectronBlocker;
   try {
-    blocker = await ElectronBlocker.fromPrebuiltAdsAndTracking(net.fetch, { path: cache, read: fs.promises.readFile, write: fs.promises.writeFile });
+    blocker = b = await ElectronBlocker.fromPrebuiltAdsAndTracking(net.fetch, { path: cache, read: fs.promises.readFile, write: fs.promises.writeFile });
   } catch { return; } // no network and no cache yet → try again next launch
-  if (cfg.adblock) blocker.enableBlockingInSession(ses);
+  if (cfg.adblock) sessions.forEach((ses) => b.enableBlockingInSession(ses));
 }
 
 ipcMain.on('adblock', () => {
   cfg.adblock = !cfg.adblock;
   saveCfg();
-  if (blocker) cfg.adblock ? blocker.enableBlockingInSession(ses) : blocker.disableBlockingInSession(ses);
+  const b = blocker;
+  if (b) sessions.forEach((ses) => (cfg.adblock ? b.enableBlockingInSession(ses) : b.disableBlockingInSession(ses)));
   sendState();
 });

@@ -31,12 +31,20 @@ Dock Web updates itself: when a new version is out it downloads in the backgroun
 - Bookmarks bar: the star in the address bar saves a page, right-click to rename or delete.
 - **Pin video:** on pages playing a video, the button in the address bar pops the video out into a small window in the screen corner that stays on top and can be dragged anywhere (like Cốc Cốc). Click again to unpin.
 - Per-site zoom (`Ctrl + mouse wheel`), find in page (`Ctrl+F`), mute individual tabs (speaker icon on the tab).
+- Fullscreen videos fill the Dock Web window (not the whole screen); `Esc` leaves. PDFs open in the tab.
+- **History** (`Ctrl+H`): search, reopen or delete visited pages.
+- **Incognito tabs** (`Ctrl+Shift+N`, purple line on the tab): no history, and their cookies are gone when Dock Web quits.
+- Right-click menu like Chrome: back / forward / reload, search Google for the selected text, save link or image as…, spelling suggestions, view page source, inspect element.
+- **Screen sharing** (Google Meet, Zoom on the web…): pick a screen or a window from the menu that pops up.
 - Stays signed in between launches. "Sign in with Google/Facebook" popups open in their own window.
 - Drag a link, file or URL from another browser into the window to open it in a new tab.
 - **Ad blocking** (⋯ menu, on by default): blocks ads and trackers with EasyList-style lists, refreshed weekly. YouTube changes its ads often, so some may still get through.
 - **Site permissions:** camera, microphone, location, notifications and clipboard reading ask first, like Chrome; the answer is remembered per site.
-- **Downloads** go straight into your Downloads folder; the ⬇ button in the address bar shows progress and opens finished files (progress also shows on the taskbar).
-- A page that fails to load or crashes shows a message with a **Thử lại** button; while a page loads, ⟳ becomes ✕ to stop it.
+- **Saved passwords:** after signing in, Dock Web offers to save the password (encrypted for your Windows account); click a sign-in box later to pick a saved account. Manage them in ⋯ → *Mật khẩu đã lưu*.
+- **Downloads** go straight into your Downloads folder; the ⬇ button in the address bar shows progress (click to pause/resume, middle-click to cancel) and opens finished files (progress also shows on the taskbar).
+- A page that fails to load or crashes shows a message with a **Thử lại** button; while a page loads, ⟳ becomes ✕ to stop it. A site with a broken HTTPS certificate can still be opened from that message.
+- Sites that ask for a username and password themselves (router pages, intranet) get a sign-in box.
+- **Default browser:** the installer registers Dock Web as a browser; pick it in Windows Settings → Apps → Default apps to open links and `.html`/`.pdf` files from other apps in Dock Web.
 - ⋯ → *Xoá cookie và dữ liệu trang web* signs out of every site and forgets site permissions.
 
 ## Keyboard shortcuts
@@ -47,11 +55,13 @@ Dock Web updates itself: when a new version is out it downloads in the backgroun
 | `Ctrl+Alt+Space` | Toggle click-through (works from any app) |
 | `Ctrl+T` / `Ctrl+W` | New tab / close tab |
 | `Ctrl+Shift+T` | Reopen the last closed tab |
+| `Ctrl+Shift+N` | New incognito tab |
 | `Ctrl+Tab`, `Ctrl+Shift+Tab`, `Ctrl+1…9` | Switch tabs (`Ctrl+9` = last tab) |
 | `Ctrl+L`, `Alt+D`, `F6` | Focus the address bar |
 | `F5`, `Ctrl+R` / `Ctrl+Shift+R` | Reload / reload bypassing the cache |
 | `Alt+←` / `Alt+→`, mouse side buttons | Back / forward |
 | `Ctrl+D` | Add / remove bookmark |
+| `Ctrl+H` | Browsing history |
 | `Ctrl+F` | Find in page |
 | `Ctrl +` / `Ctrl -` / `Ctrl+0` | Zoom in / zoom out / reset to 100% |
 | `Ctrl+P` | Print the page |
@@ -62,7 +72,7 @@ If `Ctrl+Shift+Space` or `Ctrl+Alt+Space` is already taken by another app (Unike
 ## Notes
 
 - **Google sign-in:** Google sometimes blocks sign-in inside apps that embed a browser ("This browser or app may not be secure"). Dock Web works around this in most cases; if it still fails, try again in a few minutes or turn off your VPN.
-- **Data** (tabs, bookmarks, history, login cookies, site permissions) lives in `%APPDATA%\dock-web`. Delete this folder to reset the app.
+- **Data** (tabs, bookmarks, history, login cookies, site permissions, saved passwords) lives in `%APPDATA%\dock-web`. Delete this folder to reset the app.
 - While you type in the address bar, the text is sent to Google to fetch search suggestions (same as Chrome).
 
 ## Running from source

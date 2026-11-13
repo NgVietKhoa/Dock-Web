@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { go, hideSite, hideSug, openTab, showSites, state, suggest, topSites, urlKey } from '../browser';
+import { active, go, hideSite, hideSug, openTab, showSites, state, suggest, topSites, urlKey } from '../browser';
 import logo from '../../../../build/icon.ico'; // the app icon, same file as the installer's
 import { Fav, Icon } from './Icon';
 
@@ -57,6 +57,8 @@ export function Home() {
           <button onClick={() => { showSites(undo); setUndo(''); }}>Hoàn tác</button>
           <button onClick={() => { showSites(); setUndo(''); }}>Khôi phục tất cả</button>
         </div>
+      ) : active?.incognito ? (
+        <div className="hint">Tab ẩn danh: không lưu lịch sử, cookie và dữ liệu trang web sẽ mất khi thoát Dock Web</div>
       ) : (
         <div className="hint">
           Kéo link thả vào cửa sổ để mở · nắm chỗ trống trên thanh để di chuyển · kéo mép hoặc góc để đổi kích thước<br />

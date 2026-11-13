@@ -19,7 +19,7 @@ export interface GlobalKeys { toggle: string; ghost: string }
 // Shortcuts caught in main and run by the renderer. tab1…tab9 = Ctrl+1…9
 export type KeyAction =
   | 'reopen' | 'hardReload' | 'reload' | 'newTab' | 'closeTab' | 'focusUrl' | 'back' | 'forward'
-  | 'prevTab' | 'nextTab' | 'bookmark' | 'find' | 'zoomIn' | 'zoomOut' | 'zoomReset' | 'print' | 'devtools' | `tab${number}`;
+  | 'prevTab' | 'nextTab' | 'bookmark' | 'find' | 'zoomIn' | 'zoomOut' | 'zoomReset' | 'print' | 'devtools' | 'history' | 'incognito' | `tab${number}`;
 
 export interface HistoryEntry { url: string; title: string; icon?: string; n: number; t: number } // n = visit count, t = last visit
 export interface Bookmark { url: string; title: string; icon: string }
@@ -32,16 +32,18 @@ export interface Saved {
   marks?: Bookmark[];
   zoom?: Record<string, number>; // host → zoom factor
   hiddenSites?: string[]; // hosts removed from the home page's site tiles
+  downloads?: Download[]; // finished ones, newest first
 }
 
-export interface Download { id: number; name: string; received: number; total: number; state: 'progressing' | 'completed' | 'cancelled' | 'interrupted' }
+export interface Download { id: number; name: string; path: string; received: number; total: number; state: 'progressing' | 'paused' | 'completed' | 'cancelled' | 'interrupted' }
 
 // main → renderer messages: channel → arguments
 export interface UiEvents {
   state: [DockState];
   key: [KeyAction];
-  'open-tab': [url: string];
+  'open-tab': [url: string, incognito?: boolean]; // incognito = opened from an incognito tab → stays incognito
   update: [version: string];
   audio: [webContentsId: number, audible: boolean];
   download: [Download];
+  login: [id: number, host: string, realm: string]; // a site asks for a username/password over HTTP
 }

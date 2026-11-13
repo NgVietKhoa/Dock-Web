@@ -39,6 +39,7 @@ export function createWindow() {
     minWidth: 240,
     minHeight: 160,
     frame: false,
+    fullscreenable: false, // fullscreen video fills this window instead of the whole screen (see showFull in browser.ts)
     icon,
     show: !process.argv.includes('--hidden'), // started with Windows → only the tray icon
     backgroundColor: bgColor(),

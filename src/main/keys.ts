@@ -11,6 +11,7 @@ function keyAction(i: Input): KeyAction | null {
   if ((c && i.shift && k === 'r') || (c && k === 'F5')) return 'hardReload';
   if (k === 'F5' || (c && k === 'r')) return 'reload';
   if (c && k === 't') return 'newTab';
+  if (c && i.shift && k === 'n') return 'incognito';
   if (c && k === 'w') return 'closeTab';
   if ((c && k === 'l') || k === 'F6' || (i.alt && k === 'd')) return 'focusUrl';
   if (i.alt && k === 'ArrowLeft') return 'back';
@@ -23,6 +24,7 @@ function keyAction(i: Input): KeyAction | null {
   if (c && k === '-') return 'zoomOut';
   if (c && k === '0') return 'zoomReset';
   if (c && k === 'p') return 'print';
+  if (c && k === 'h') return 'history';
   if (k === 'F12' || (c && i.shift && k === 'i')) return 'devtools';
   return null;
 }

@@ -26,6 +26,7 @@ export interface Tab {
   title?: string;
   icon?: string;
   lazy: boolean; // restored tab whose page isn't loaded until clicked
+  incognito?: boolean; // own in-memory session; never saved in history, tabs or reopen list
   ready?: boolean; // dom-ready fired → webview methods can be called
   canBack?: boolean; // cached: canGoBack() is a sync call to main, too slow to run on every render
   canFwd?: boolean;
@@ -34,7 +35,9 @@ export interface Tab {
   audible?: boolean;
   muted?: boolean;
   loading?: boolean;
+  full?: boolean; // the page went fullscreen (video) → it fills the window
   error?: string; // the page couldn't load or crashed → shown instead of the (blank) page
+  certError?: boolean; // the error is a broken HTTPS certificate → the error page offers to continue anyway
 }
 export interface SugItem { kind: 'search' | 'url' | 'hist' | 'google'; text?: string; url: string; h?: HistoryEntry }
 // '-' = separator · ReactElement = custom row · fav = favicon URL (instead of icon) · aux = middle-click
@@ -42,7 +45,8 @@ export type MenuItem = { label: string; icon?: string; fav?: string; tip?: strin
 
 export let tabs: Tab[] = [], active: Tab | null = null;
 let closed: string[] = [];
-let hist: HistoryEntry[] = [];
+export let hist: HistoryEntry[] = [];
+export let histOpen = false; // Ctrl+H history panel over the page
 export let marks: Bookmark[] = [];
 export let zooms: Record<string, number> = {};
 let hiddenSites: string[] = [];
@@ -79,7 +83,7 @@ function flush() {
 }
 
 export function save() {
-  const kept = tabs.filter((t) => t.url); // new tabs that never loaded a page don't need to be remembered
+  const kept = tabs.filter((t) => t.url && !t.incognito); // new tabs that never loaded a page don't need to be remembered
   store('tabs', kept.map((t) => t.url));
   store('active', active ? kept.indexOf(active) : -1);
 }
@@ -100,7 +104,13 @@ function visitSet(url: string, key: 'title' | 'icon', value: string) {
 export function forget(h: HistoryEntry) {
   hist = hist.filter((x) => x !== h);
   store('history', hist);
-  suggest();
+  if (sugItems.length) suggest(); // removed from the address bar suggestions → refresh them
+  else emit(); // from the history panel
+}
+export function toggleHistory() {
+  histOpen = !histOpen;
+  emit();
+  if (!histOpen) focusPage();
 }
 export function clearHistory() {
   if (confirm('Xoá toàn bộ lịch sử duyệt web?')) { hist = []; store('history', hist); emit(); }
@@ -144,15 +154,16 @@ export function showSites(host?: string) {
 // Empty raw = blank "New tab" like Chrome: the webview has no src yet; typing an address opens it in this tab.
 // lazy = don't load the page until the tab is clicked (restoring old tabs on launch)
 let nextId = 1;
-export function openTab(raw?: string, focus = true, lazy = false) {
+export function openTab(raw?: string, focus = true, lazy = false, incognito = false) {
   const url = raw ? norm(raw) : '';
   if (url === null) return;
   const wv = document.createElement('webview') as WebviewTag;
   if (url && !lazy) wv.setAttribute('src', url);
-  wv.setAttribute('partition', 'persist:dock'); // keep logins/cookies
+  wv.setAttribute('partition', incognito ? 'incognito' : 'persist:dock'); // persist: keep logins/cookies
   wv.setAttribute('allowpopups', '');
+  wv.setAttribute('plugins', ''); // Chromium's PDF viewer
   const h = url ? hist.find((x) => x.url === url) : undefined; // unloaded tabs take their old title/icon from history
-  const t: Tab = { id: nextId++, url, wv, title: h?.title, icon: h?.icon, lazy: lazy && !!url };
+  const t: Tab = { id: nextId++, url, wv, title: h?.title, icon: h?.icon, lazy: lazy && !!url, incognito };
   wv.addEventListener('dom-ready', () => { t.ready = true; t.wcId = wv.getWebContentsId(); applyZoom(t); updNav(t); emit(); });
   wv.addEventListener('page-title-updated', (e) => { t.title = e.title; visitSet(t.url, 'title', e.title); emit(); });
   wv.addEventListener('page-favicon-updated', (e) => {
@@ -179,7 +190,7 @@ export function openTab(raw?: string, focus = true, lazy = false) {
     }
     if (!sameHost) { applyZoom(t); t.icon = ''; } // zoom is remembered per host → only reapply when the host changes; the new site sends its own favicon
     updNav(t);
-    visit(e.url);
+    if (!incognito) visit(e.url); // incognito leaves nothing in history
     save();
     emit();
   };
@@ -191,7 +202,9 @@ export function openTab(raw?: string, focus = true, lazy = false) {
   // -3 = aborted (stopped, replaced by another navigation, or turned into a download) → not an error
   wv.addEventListener('did-fail-load', (e) => {
     if (!e.isMainFrame || e.errorCode === -3) return;
-    t.error = LOAD_ERRORS[e.errorDescription] ?? `Không mở được trang (${e.errorDescription})`;
+    t.certError = e.errorDescription.startsWith('ERR_CERT_');
+    t.error = t.certError ? 'Kết nối không an toàn: chứng chỉ của trang không hợp lệ'
+      : LOAD_ERRORS[e.errorDescription] ?? `Không mở được trang (${e.errorDescription})`;
     t.url = e.validatedURL; // like Chrome: the address bar keeps the failed URL and ⟳ retries it
     if (t === active && document.activeElement !== urlIn) urlIn.value = t.url;
     save();
@@ -201,6 +214,8 @@ export function openTab(raw?: string, focus = true, lazy = false) {
     if (e.details.reason !== 'clean-exit') { t.error = 'Trang bị lỗi và đã dừng'; t.loading = false; emit(); }
   });
   wv.addEventListener('did-navigate-in-page', (e) => e.isMainFrame && nav(e));
+  wv.addEventListener('enter-html-full-screen', () => { t.full = true; showFull(); });
+  wv.addEventListener('leave-html-full-screen', () => { t.full = false; showFull(); });
   views.appendChild(wv);
   tabs.push(t);
   if (focus) select(t); // saves + re-renders
@@ -222,8 +237,11 @@ function updNav(t: Tab) {
   t.canFwd = t.wv.canGoForward();
 }
 
-export function newTab() {
-  openTab();
+// Fullscreen video fills the Dock Web window (not the whole screen): the tab bar, address bar and bookmarks hide
+const showFull = () => document.body.classList.toggle('full', !!active?.full);
+
+export function newTab(incognito = false) {
+  openTab(undefined, true, false, incognito);
   urlIn.focus();
 }
 
@@ -233,8 +251,10 @@ export function focusPage() { if (active?.url) active.wv.focus(); }
 export function select(t: Tab) {
   if (active !== t) closeFind();
   active = t;
+  histOpen = false;
   if (t.lazy) { t.lazy = false; t.wv.setAttribute('src', t.url); }
   tabs.forEach((x) => x.wv.classList.toggle('on', x === t && !!x.url));
+  showFull();
   urlIn.value = t.url;
   emit();
   focusPage();
@@ -243,13 +263,13 @@ export function select(t: Tab) {
 
 export function close(t: Tab) {
   if (active === t) closeFind();
-  if (t.url) closed.push(t.url);
+  if (t.url && !t.incognito) closed.push(t.url);
   if (closed.length > 20) closed.shift();
   const i = tabs.indexOf(t);
   t.wv.remove();
   tabs.splice(i, 1);
   if (active === t && tabs.length) return select(tabs[Math.max(0, i - 1)]); // saves + re-renders
-  if (active === t) active = null;
+  if (active === t) { active = null; showFull(); }
   if (!tabs.length) urlIn.value = '';
   save();
   emit();
@@ -271,11 +291,17 @@ export const forward = () => { if (active?.ready && active.wv.canGoForward()) ac
 // After an error, load the URL again: the failed page was never committed (a crashed one reloads either way)
 export const reload = () => { if (active?.ready) active.error ? active.wv.loadURL(active.url) : active.wv.reload(); focusPage(); };
 export const stop = () => { if (active?.ready) active.wv.stop(); };
+export function ignoreCert() {
+  if (!active) return;
+  dock.certOk(hostOf(active.url));
+  reload();
+}
 
 // ---------- Address bar (like Chrome) ----------
 export function go(raw: string) {
   const u = norm(raw);
   if (!u) return;
+  if (histOpen) { histOpen = false; emit(); }
   urlIn.value = u;
   // Like Chrome: leave the address bar / home search after Enter (hides suggestions) → the final URL after redirects is shown
   (document.activeElement as HTMLElement | null)?.blur();
@@ -434,12 +460,23 @@ export function toggleMenu(btn: HTMLElement, items: () => MenuItem[]) {
 // ---------- Downloads (⬇ button in the address bar) ----------
 const mb = (n: number) => (n / 1048576).toFixed(1) + ' MB';
 export function downloadMenu(): MenuItem[] {
+  const row = (d: Download): MenuItem => {
+    const aux = () => dock.download(d.id, 'cancel');
+    switch (d.state) {
+      case 'progressing':
+        return { label: d.name, icon: 'download', hint: d.total ? Math.floor((d.received / d.total) * 100) + '%' : mb(d.received), tip: 'Bấm để tạm dừng · bấm chuột giữa để huỷ', run: () => dock.download(d.id, 'pause'), aux };
+      case 'paused':
+        return { label: d.name, icon: 'download', hint: 'Tạm dừng', tip: 'Bấm để tải tiếp · bấm chuột giữa để huỷ', run: () => dock.download(d.id, 'resume'), aux };
+      case 'interrupted':
+        return { label: d.name, icon: 'reload', hint: 'Lỗi', tip: 'Bấm để thử lại', run: () => dock.download(d.id, 'resume'), aux };
+      case 'completed':
+        return { label: d.name, icon: 'file', hint: mb(d.total || d.received), tip: 'Bấm để mở file', run: () => dock.openFile(d.path) };
+      case 'cancelled':
+        return { label: d.name, icon: 'x', hint: 'Đã huỷ', run: () => {} };
+    }
+  };
   return [
-    ...downloads.map((d): MenuItem => d.state === 'progressing'
-      ? { label: d.name, icon: 'download', hint: d.total ? Math.floor((d.received / d.total) * 100) + '%' : mb(d.received), tip: 'Bấm để huỷ tải', run: () => dock.download(d.id, 'cancel') }
-      : d.state === 'completed'
-        ? { label: d.name, icon: 'file', hint: mb(d.total || d.received), tip: 'Bấm để mở file', run: () => dock.download(d.id, 'open') }
-        : { label: d.name, icon: 'x', hint: d.state === 'cancelled' ? 'Đã huỷ' : 'Lỗi', run: () => {} }),
+    ...downloads.map(row),
     '-',
     { label: 'Mở thư mục Tải xuống', icon: 'folder', run: () => dock.downloadsFolder() },
   ];
@@ -452,20 +489,31 @@ dock.onState((s) => {
   document.body.classList.toggle('ghost', s.ghost);
   emit();
 });
-dock.onOpenTab((url) => openTab(url));
+dock.onOpenTab((url, incognito) => openTab(url, true, false, incognito));
 dock.onUpdate((v) => { update = v; emit(); });
 dock.onDownload((d) => {
   downloads = [d, ...downloads.filter((x) => x.id !== d.id)];
+  // Finished files stay in the list after a restart (unfinished ones can't continue then)
+  store('downloads', downloads.filter((x) => x.state === 'completed').slice(0, 20));
   if (menu?.owner === 'dl') menu = { ...menu, items: downloadMenu() }; // live progress while the list is open
   emit();
 });
+// HTTP sign-in requests waiting for an answer; the box shows the first one
+export let logins: { id: number; host: string; realm: string }[] = [];
+dock.onLogin((id, host, realm) => { logins = [...logins, { id, host, realm }]; emit(); });
+export function answerLogin(username?: string, password?: string) {
+  dock.login(logins[0].id, username, password);
+  logins = logins.slice(1);
+  emit();
+}
 dock.onAudio((id, audible) => {
   const t = tabs.find((x) => x.wcId === id);
   if (t) { t.audible = audible; emit(); }
 });
 
 const keys: Partial<Record<KeyAction, () => void>> = {
-  newTab,
+  newTab: () => newTab(),
+  incognito: () => newTab(true),
   closeTab: () => active && close(active),
   reopen: () => { if (closed.length) openTab(closed.pop()); },
   focusUrl: () => { urlIn.focus(); urlIn.select(); },
@@ -481,6 +529,7 @@ const keys: Partial<Record<KeyAction, () => void>> = {
   zoomOut: () => zoom(-1),
   zoomReset: () => zoom(0),
   print: () => active?.ready && active.wv.print(),
+  history: toggleHistory,
   devtools: () => active?.ready && (active.wv.isDevToolsOpened() ? active.wv.closeDevTools() : active.wv.openDevTools()),
 };
 dock.onKey((a) => {
@@ -506,6 +555,7 @@ export async function restore() {
   marks = s.marks ?? [];
   zooms = s.zoom ?? {};
   hiddenSites = s.hiddenSites ?? [];
+  downloads = s.downloads ?? [];
   // Zoom used to be keyed by host:port → re-key by hostname (see hostOf)
   for (const k of Object.keys(zooms)) {
     const h = hostOf('http://' + k);
@@ -513,6 +563,7 @@ export async function restore() {
   }
   // Only load the active tab's page; others load when clicked (each page = 1 process, loading all at once is heavy)
   (s.tabs ?? []).forEach((u) => openTab(u, false, true));
-  if (tabs.length) select(tabs[s.active ?? 0] ?? tabs[0]);
+  // A link opened from another app may have arrived first → it stays the active tab
+  if (!active && tabs.length) select(tabs[s.active ?? 0] ?? tabs[0]);
   emit();
 }

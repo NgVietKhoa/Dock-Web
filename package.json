@@ -41,7 +41,8 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Dock Web"
+      "shortcutName": "Dock Web",
+      "include": "build/installer.nsh"
     }
   },
   "repository": {

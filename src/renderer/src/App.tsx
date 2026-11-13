@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
-import { active, moving, openTab, reload, restore, state, useBrowser, views } from './browser';
+import { active, histOpen, ignoreCert, moving, openTab, reload, restore, state, useBrowser, views } from './browser';
 import { Bookmarks } from './components/Bookmarks';
 import { FindBar } from './components/FindBar';
+import { History } from './components/History';
 import { Home } from './components/Home';
+import { Login } from './components/Login';
 import { Icon } from './components/Icon';
 import { Menu } from './components/Menu';
 import { NavBar, Suggestions } from './components/NavBar';
@@ -57,9 +59,11 @@ export function App() {
               <b>{active.error}</b>
               <span>{pretty(active.url)}</span>
               <button className="on" onClick={reload}>Thử lại</button>
+              {active.certError && <button className="link" onClick={ignoreCert}>Vẫn tiếp tục (không an toàn)</button>}
             </div>
           )}
           <FindBar />
+          {histOpen && <History />}
         </div>
       </div>
       {/* Drag the bottom-right corner to resize (in addition to dragging the window edges) */}
@@ -80,6 +84,7 @@ export function App() {
       <div id="shield" className={shield ? 'on' : ''} />
       <Suggestions />
       <Menu />
+      <Login />
       <div id="ghost"><Icon name="ghost" />Đang xuyên chuột · {state.keys?.ghost} để tắt</div>
     </>
   );
