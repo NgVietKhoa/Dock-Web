@@ -1,7 +1,13 @@
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, webFrame } from 'electron';
 
-// Runs inside every web page, in its own isolated world (the page can't see it): notices sign-ins so main can offer
-// to save the password, and fills a saved one in when the user picks it. See main/passwords.ts
+// Runs inside every web page, in its own isolated world (the page can't see it).
+
+// Ad blocking scriptlets: asked for synchronously so they run before the page's own scripts. See main/adblock.ts
+const scripts: string[] = ipcRenderer.sendSync('adblock-scripts', location.href);
+scripts.forEach((s) => webFrame.executeJavaScript(s));
+
+// Saved passwords: notices sign-ins so main can offer to save the password, and fills a saved one in when the user
+// picks it. See main/passwords.ts
 const USER = 'input:not([type]), input[type=text], input[type=email], input[type=tel]';
 const isPw = (el: unknown): el is HTMLInputElement => el instanceof HTMLInputElement && el.type === 'password';
 const pwBoxes = (root: ParentNode = document) => [...root.querySelectorAll<HTMLInputElement>('input[type=password]')];
